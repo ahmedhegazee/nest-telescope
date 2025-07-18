@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapping": {
+    "^@telescope/(.*)$": "<rootDir>/../src/telescope/$1",
+    "^@telescope/core/(.*)$": "<rootDir>/../src/telescope/core/$1",
+    "^@telescope/devtools/(.*)$": "<rootDir>/../src/telescope/devtools/$1",
+    "^@telescope/storage/(.*)$": "<rootDir>/../src/telescope/storage/$1"
+  }
+}
