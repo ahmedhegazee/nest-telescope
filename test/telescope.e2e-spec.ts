@@ -12,7 +12,21 @@ describe('Telescope Integration (e2e)', () => {
       imports: [
         TelescopeModule.forRoot({ 
           enabled: true,
-          devtools: { enabled: false } // Disable DevTools for testing
+          devtools: { 
+            enabled: false, // Disable DevTools for testing
+            port: 8001,
+            snapshot: true,
+            features: {
+              dependencyGraph: true,
+              interactivePlayground: true,
+              performanceMetrics: true
+            }
+          },
+          storage: {
+            driver: 'memory',
+            retention: { hours: 24, maxEntries: 10000 },
+            batch: { enabled: false, size: 50, flushInterval: 5000 } // Disable batch for testing
+          }
         })
       ]
     }).compile();

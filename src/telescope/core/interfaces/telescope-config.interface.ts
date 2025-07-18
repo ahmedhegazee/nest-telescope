@@ -6,7 +6,6 @@ export interface TelescopeConfig {
   devtools: {
     enabled: boolean;
     port: number;
-    snapshot: boolean;
     features: {
       dependencyGraph: boolean;
       interactivePlayground: boolean;
@@ -17,6 +16,7 @@ export interface TelescopeConfig {
   // Storage Configuration
   storage: {
     driver: 'memory' | 'file' | 'database' | 'redis';
+    fallback?: 'memory' | 'file' | 'database' | 'redis';
     connection?: string;
     retention: {
       hours: number;
@@ -26,6 +26,32 @@ export interface TelescopeConfig {
       enabled: boolean;
       size: number;
       flushInterval: number;
+    };
+    // Database storage options
+    database?: {
+      type: 'postgres' | 'mysql' | 'sqlite' | 'mariadb' | 'mssql';
+      host?: string;
+      port?: number;
+      username?: string;
+      password?: string;
+      database?: string;
+      synchronize?: boolean;
+      logging?: boolean;
+    };
+    // Redis storage options
+    redis?: {
+      host?: string;
+      port?: number;
+      password?: string;
+      db?: number;
+      ttl?: number;
+      options?: any;
+    };
+    // File storage options
+    file?: {
+      directory?: string;
+      maxFileSize?: number;
+      compression?: boolean;
     };
   };
   
@@ -43,6 +69,16 @@ export interface TelescopeConfig {
     analytics: boolean;
     customWatchers: boolean;
   };
+  
+  // Watcher Configuration
+  watchers?: {
+    [key: string]: {
+      enabled: boolean;
+      priority?: number;
+      tags?: string[];
+      dependencies?: string[];
+    };
+  };
 }
 
 // Default configuration
@@ -53,7 +89,6 @@ export const defaultTelescopeConfig: TelescopeConfig = {
   devtools: {
     enabled: true,
     port: 8001,
-    snapshot: true,
     features: {
       dependencyGraph: true,
       interactivePlayground: true,

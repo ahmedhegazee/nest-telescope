@@ -10,10 +10,4 @@ module.exports = {
   ],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
-  moduleNameMapping: {
-    '^@telescope/(.*)$': '<rootDir>/telescope/$1',
-    '^@telescope/core/(.*)$': '<rootDir>/telescope/core/$1',
-    '^@telescope/devtools/(.*)$': '<rootDir>/telescope/devtools/$1',
-    '^@telescope/storage/(.*)$': '<rootDir>/telescope/storage/$1',
-  },
 };

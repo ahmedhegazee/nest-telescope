@@ -8,7 +8,6 @@ import { TelescopeModule } from './telescope/telescope.module';
       devtools: {
         enabled: true,
         port: 8001,
-        snapshot: true,
         features: {
           dependencyGraph: true,
           interactivePlayground: true,
