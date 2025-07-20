@@ -48,6 +48,17 @@ export class TelescopeService {
     return this.storageService.findById(id);
   }
 
+  async getEntries(filter?: TelescopeEntryFilter, startDate?: Date, endDate?: Date): Promise<TelescopeEntry[]> {
+    const searchFilter = {
+      ...filter,
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate })
+    };
+    
+    const result = await this.storageService.find(searchFilter);
+    return result.entries;
+  }
+
   async clear(): Promise<void> {
     await this.storageService.clear();
     this.logger.log('Telescope entries cleared');

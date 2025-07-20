@@ -95,8 +95,8 @@ export class ResilientBridgeService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn('Stream processing circuit breaker opened');
         this.handleStreamProcessingFailure();
       },
-      onHalfOpen: (breaker) => this.logger.info('Stream processing circuit breaker half-open'),
-      onClose: (breaker) => this.logger.info('Stream processing circuit breaker closed')
+      onHalfOpen: (breaker) => this.logger.log('Stream processing circuit breaker half-open'),
+      onClose: (breaker) => this.logger.log('Stream processing circuit breaker closed')
     });
     this.circuitBreakerRegistry.register('stream', streamBreaker);
 
@@ -218,7 +218,7 @@ export class ResilientBridgeService implements OnModuleInit, OnModuleDestroy {
 
     try {
       // Simplified fallback processing - just log and store basic info
-      this.logger.info(`Fallback processing for ${type} entry: ${entry.id || 'unknown'}`);
+      this.logger.log(`Fallback processing for ${type} entry: ${entry.id || 'unknown'}`);
       
       // Could implement basic storage here or queue for later processing
       // For now, just log the entry

@@ -75,7 +75,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.overview.totalRequests).toBe(3);
@@ -113,7 +113,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.overview.averageResponseTime).toBe(150);
@@ -150,7 +150,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.overview.totalErrors).toBe(3);
@@ -195,7 +195,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.performance.responseTimeDistribution).toBeDefined();
@@ -231,14 +231,14 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.trends.performanceTrends).toBeDefined();
       expect(analytics.trends.performanceTrends.length).toBeGreaterThan(0);
     });
 
-    it('should filter analytics by time range', () => {
+    it('should filter analytics by time range', async () => {
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 3600000);
       const twoHoursAgo = new Date(now.getTime() - 7200000);
@@ -264,9 +264,9 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
-      const analytics = service.getAnalytics(oneHourAgo, now);
+      const analytics = await service.getAnalyticsForTimeRange(oneHourAgo, now);
       expect(analytics.overview.totalRequests).toBe(2);
       expect(analytics.overview.averageResponseTime).toBe(175);
     });
@@ -283,7 +283,7 @@ describe('AnalyticsService', () => {
         },
       }));
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.trends.performanceTrends).toBeDefined();
@@ -300,7 +300,7 @@ describe('AnalyticsService', () => {
         },
       }));
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.trends.performanceTrends).toBeDefined();
@@ -317,7 +317,7 @@ describe('AnalyticsService', () => {
         },
       }));
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.trends.performanceTrends).toBeDefined();
@@ -346,7 +346,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.alerts.anomalies).toBeDefined();
@@ -371,7 +371,7 @@ describe('AnalyticsService', () => {
         })),
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.alerts.anomalies).toBeDefined();
@@ -429,7 +429,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.overview.totalRequests).toBe(1);
@@ -458,7 +458,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.overview).toBeDefined();
@@ -501,7 +501,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics1 = service.getAnalytics();
       const analytics2 = service.getAnalytics();
@@ -543,7 +543,7 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      telescopeService.getEntries.mockReturnValue(mockEntries);
+      telescopeService.getEntries.mockResolvedValue(mockEntries);
 
       const analytics = service.getAnalytics();
       expect(analytics.overview.totalRequests).toBe(1);

@@ -566,9 +566,9 @@ export class AnalyticsService implements OnModuleInit {
     this.currentAnalytics.errors.topErrors = 
       this.calculateTopErrors(errors);
 
-    // Update error trends
+    // Update error trends - converting to time series format
     this.currentAnalytics.errors.errorTrends = 
-      this.calculateErrorTrends(errors);
+      this.convertErrorsToTimeSeries(errors);
 
     // Update impact analysis
     this.currentAnalytics.errors.impactAnalysis = 
@@ -664,9 +664,9 @@ export class AnalyticsService implements OnModuleInit {
     this.currentAnalytics.trends.performanceTrends = 
       this.calculatePerformanceTrends(entries);
 
-    // Update error trends
+    // Update error trends - converting to time series format
     this.currentAnalytics.trends.errorTrends = 
-      this.calculateErrorTrends(entries.filter(e => e.type === 'exception'));
+      this.convertErrorsToTimeSeries(entries.filter(e => e.type === 'exception'));
 
     // Update predictions
     this.currentAnalytics.trends.predictions = 
@@ -1327,5 +1327,32 @@ export class AnalyticsService implements OnModuleInit {
       .replace(/[a-f0-9]{64}/gi, 'HASH64')
       .replace(/\d{4}-\d{2}-\d{2}/g, 'DATE')
       .replace(/\d{2}:\d{2}:\d{2}/g, 'TIME');
+  }
+
+  private convertErrorsToTimeSeries(errors: any[]): TimeSeries[] {
+    // Group errors by hour and count occurrences
+    const now = new Date();
+    const hourlyBuckets = new Map<string, number>();
+    
+    // Initialize buckets for the last 24 hours
+    for (let i = 23; i >= 0; i--) {
+      const hourAgo = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourKey = hourAgo.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+      hourlyBuckets.set(hourKey, 0);
+    }
+    
+    // Count errors by hour
+    errors.forEach(error => {
+      const timestamp = new Date(error.timestamp);
+      const hourKey = timestamp.toISOString().slice(0, 13);
+      const currentCount = hourlyBuckets.get(hourKey) || 0;
+      hourlyBuckets.set(hourKey, currentCount + 1);
+    });
+    
+    // Convert to TimeSeries format
+    return Array.from(hourlyBuckets.entries()).map(([hourKey, count]) => ({
+      timestamp: new Date(hourKey + ':00:00.000Z'),
+      value: count
+    }));
   }
 }

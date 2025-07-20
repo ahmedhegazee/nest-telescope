@@ -967,10 +967,7 @@ export class CacheWatcherService implements OnModuleInit, OnModuleDestroy {
 
     for (const config of defaultHosts) {
       try {
-        const client = new Redis({
-          host: config.host,
-          port: config.port,
-          retryDelayOnFailover: 100,
+        const client = new Redis(config.port, config.host, {
           enableReadyCheck: false,
           maxRetriesPerRequest: 1,
         });

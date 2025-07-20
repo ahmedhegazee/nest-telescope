@@ -15,8 +15,13 @@ describe('RequestWatcherService', () => {
 
     const mockConfig: TelescopeConfig = {
       enabled: true,
+      environment: 'test',
       storage: {
         driver: 'memory',
+        retention: {
+          hours: 24,
+          maxEntries: 10000
+        },
         batch: {
           enabled: true,
           size: 100,
@@ -24,7 +29,23 @@ describe('RequestWatcherService', () => {
         }
       },
       devtools: {
-        enabled: true
+        enabled: true,
+        port: 8001,
+        features: {
+          dependencyGraph: true,
+          interactivePlayground: true,
+          performanceMetrics: true
+        }
+      },
+      dashboard: {
+        enabled: true,
+        path: '/telescope',
+        strategy: 'hybrid'
+      },
+      features: {
+        realTimeUpdates: true,
+        analytics: true,
+        customWatchers: true
       },
       watchers: {
         request: {

@@ -1,34 +1,40 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { StorageDriver, StorageStats } from './interfaces/storage.interface';
-import { TelescopeConfig } from '../core/interfaces/telescope-config.interface';
-import { TelescopeEntry, TelescopeEntryFilter, TelescopeEntryResult } from '../core/interfaces/telescope-entry.interface';
-import { MemoryStorageDriver } from './drivers/memory-storage.driver';
+import { Injectable, Inject } from "@nestjs/common";
+import { StorageDriver, StorageStats } from "./interfaces/storage.interface";
+import { TelescopeConfig } from "../core/interfaces/telescope-config.interface";
+import {
+  TelescopeEntry,
+  TelescopeEntryFilter,
+  TelescopeEntryResult,
+} from "../core/interfaces/telescope-entry.interface";
+import { MemoryStorageDriver } from "./drivers/memory-storage.driver";
+import { FileStorageDriver } from "./drivers/file-storage.driver";
+import { DatabaseStorageDriver } from "./drivers/database-storage.driver";
+import { RedisStorageDriver } from "./drivers/redis-storage.driver";
 
 @Injectable()
 export class StorageService implements StorageDriver {
   private driver: StorageDriver;
 
   constructor(
-    @Inject('TELESCOPE_CONFIG') private readonly config: TelescopeConfig
+    @Inject("TELESCOPE_CONFIG") private readonly config: TelescopeConfig
   ) {
     this.driver = this.createDriver();
   }
 
   private createDriver(): StorageDriver {
     switch (this.config.storage.driver) {
-      case 'memory':
+      case "memory":
         return new MemoryStorageDriver();
-      case 'file':
-        // TODO: Implement FileStorageDriver
-        throw new Error('File storage not implemented yet');
-      case 'database':
-        // TODO: Implement DatabaseStorageDriver  
-        throw new Error('Database storage not implemented yet');
-      case 'redis':
-        // TODO: Implement RedisStorageDriver
-        throw new Error('Redis storage not implemented yet');
+      case "file":
+        return new FileStorageDriver(this.config);
+      case "database":
+        return new DatabaseStorageDriver(this.config);
+      case "redis":
+        return new RedisStorageDriver(this.config);
       default:
-        throw new Error(`Unknown storage driver: ${this.config.storage.driver}`);
+        throw new Error(
+          `Unknown storage driver: ${this.config.storage.driver}`
+        );
     }
   }
 

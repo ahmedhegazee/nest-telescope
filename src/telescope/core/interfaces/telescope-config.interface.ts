@@ -11,6 +11,16 @@ export interface TelescopeConfig {
       interactivePlayground: boolean;
       performanceMetrics: boolean;
     };
+    bridge?: {
+      resilience?: {
+        circuitBreakerEnabled?: boolean;
+        fallbackEnabled?: boolean;
+        maxRetries?: number;
+        timeout?: number;
+        retryDelayMs?: number;
+        healthCheckIntervalMs?: number;
+      };
+    };
   };
   
   // Storage Configuration
@@ -77,8 +87,76 @@ export interface TelescopeConfig {
       priority?: number;
       tags?: string[];
       dependencies?: string[];
+      // Request watcher specific config
+      excludePaths?: string[];
+      sampling?: {
+        enabled: boolean;
+        rate: number;
+      };
+      security?: {
+        sanitizeParams: boolean;
+        sanitizeHeaders: boolean;
+        excludeHeaders: string[];
+      };
+      performance?: {
+        slowRequestThreshold: number;
+        enableDetailedTimings: boolean;
+      };
+      filters?: {
+        excludeMethods: string[];
+        excludeStatusCodes: number[];
+        includeOnlyPaths: string[];
+      };
+      // Job watcher specific config
+      trackJobExecution?: boolean;
+      enablePerformanceTracking?: boolean;
+      slowJobThreshold?: number;
+      alertThresholds?: {
+        failureRate?: number;
+        avgExecutionTime?: number;
+        queueSize?: number;
+        stalledJobs?: number;
+        timeWindow?: number;
+      };
+      bullIntegration?: {
+        enabled: boolean;
+        autoDiscoverQueues: boolean;
+        trackJobProgress: boolean;
+        trackJobResults: boolean;
+      };
+      maxHistorySize?: number;
+      retentionPeriod?: number;
+      excludeJobTypes?: string[];
+      includeJobTypes?: string[];
+      sampleRate?: number;
+      // Cache watcher specific config
+      trackCacheOperations?: boolean;
+      slowOperationThreshold?: number;
+      captureValues?: boolean;
+      sanitizeKeys?: boolean;
+      sanitizeValues?: boolean;
+      maxKeyLength?: number;
+      maxValueSize?: number;
+      sensitiveKeyPatterns?: string[];
+      excludeOperations?: string[];
+      excludeKeyPatterns?: string[];
+      includeKeyPatterns?: string[];
+      redisIntegration?: {
+        enabled: boolean;
+        autoDiscoverInstances: boolean;
+        monitorCommands: boolean;
+        trackSlowQueries: boolean;
+        slowQueryThreshold: number;
+        trackMemoryUsage: boolean;
+        trackConnectionPool: boolean;
+      };
     };
   };
+  
+  // Week 7 Advanced Features
+  enablePerformanceCorrelation?: boolean;
+  enableAdvancedAnalytics?: boolean;
+  enableExportReporting?: boolean;
 }
 
 // Default configuration

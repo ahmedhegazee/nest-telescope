@@ -169,7 +169,10 @@ export class HealthController {
       // Check if telescope service is responsive
       const isEnabled = this.config.enabled;
       const watchers = this.config.watchers || {};
-      const activeWatchers = Object.keys(watchers).filter(key => watchers[key] === true || watchers[key]?.enabled === true);
+      const activeWatchers = Object.keys(watchers).filter(key => {
+        const watcher = watchers[key];
+        return typeof watcher === 'boolean' ? watcher : watcher?.enabled === true;
+      });
 
       if (!isEnabled) {
         return {
