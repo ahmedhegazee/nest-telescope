@@ -16,10 +16,12 @@ export interface StreamMetrics {
   errorCount: number;
   averageProcessingTime: number;
   throughput: number;
+  isProcessing: boolean;
+  subscriptions: number;
   lastProcessedAt?: Date;
 }
 
-export interface PerformanceMetrics {
+export interface BatchPerformanceMetrics {
   totalEntries: number;
   totalBatches: number;
   successfulBatches: number;
@@ -36,7 +38,7 @@ export class MetricsService {
   private readonly batchResults = new Subject<BatchResult>();
   private readonly startTime = Date.now();
   
-  private metrics: PerformanceMetrics = {
+  private metrics: BatchPerformanceMetrics = {
     totalEntries: 0,
     totalBatches: 0,
     successfulBatches: 0,
@@ -90,7 +92,7 @@ export class MetricsService {
     }
   }
 
-  private updateMetrics(current: PerformanceMetrics, result: BatchResult): PerformanceMetrics {
+  private updateMetrics(current: BatchPerformanceMetrics, result: BatchResult): BatchPerformanceMetrics {
     const totalBatches = current.totalBatches + 1;
     const successfulBatches = current.successfulBatches + (result.success ? 1 : 0);
     const failedBatches = current.failedBatches + (result.success ? 0 : 1);
@@ -120,7 +122,7 @@ export class MetricsService {
     };
   }
 
-  getMetrics(): PerformanceMetrics {
+  getMetrics(): BatchPerformanceMetrics {
     return { ...this.metrics };
   }
 
@@ -130,6 +132,8 @@ export class MetricsService {
       errorCount: this.errorCount,
       averageProcessingTime: this.metrics.averageProcessingTime,
       throughput: this.metrics.throughput,
+      isProcessing: true,
+      subscriptions: 0,
       lastProcessedAt: this.processingTimes.length > 0 ? new Date() : undefined
     };
   }
@@ -151,7 +155,7 @@ export class MetricsService {
   }
 
   // Observable for real-time metrics updates
-  getMetricsStream(): Observable<PerformanceMetrics> {
+  getMetricsStream(): Observable<BatchPerformanceMetrics> {
     return this.batchResults.pipe(
       scan((acc, result) => this.updateMetrics(acc, result), this.metrics),
       startWith(this.metrics)
@@ -176,7 +180,7 @@ export class MetricsService {
 
   // Get detailed performance report
   getPerformanceReport(): {
-    metrics: PerformanceMetrics;
+    metrics: BatchPerformanceMetrics;
     samples: {
       processingTimes: number[];
       recentBatches: number;

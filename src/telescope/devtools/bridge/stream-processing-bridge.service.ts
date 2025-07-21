@@ -38,7 +38,6 @@ export interface StreamConfiguration {
 
 @Injectable()
 export class StreamProcessingBridgeService extends DevToolsBridgeService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(StreamProcessingBridgeService.name);
   private readonly entryStream = new Subject<TelescopeEntry>();
   private readonly errorStream = new Subject<ProcessingError>();
   private subscriptions: Subscription[] = [];
@@ -55,11 +54,11 @@ export class StreamProcessingBridgeService extends DevToolsBridgeService impleme
 
   constructor(
     telescopeService: TelescopeService,
-    entryManager: EnhancedEntryManagerService,
+    private readonly entryManager: EnhancedEntryManagerService,
     private readonly metricsService: MetricsService,
     @Inject('TELESCOPE_CONFIG') config: TelescopeConfig
   ) {
-    super(telescopeService, entryManager, config);
+    super(telescopeService, config);
     this.updateStreamConfig(config);
   }
 
@@ -325,7 +324,7 @@ export class StreamProcessingBridgeService extends DevToolsBridgeService impleme
     lastProcessedAt?: Date;
   } {
     const issues: string[] = [];
-    const metrics = this.getStreamMetrics();
+    const metrics = this.metricsService.getStreamMetrics();
     
     if (!this.isProcessing) {
       issues.push('Stream processing is not active');

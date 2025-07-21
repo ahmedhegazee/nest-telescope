@@ -5,6 +5,19 @@ import { PerformanceCorrelationService } from './performance-correlation.service
 import * as fs from 'fs';
 import * as path from 'path';
 
+export enum ExportFormat {
+  JSON = 'json',
+  CSV = 'csv',
+  XLSX = 'xlsx',
+  PDF = 'pdf'
+}
+
+export enum ReportFormat {
+  HTML = 'html',
+  PDF = 'pdf',
+  MARKDOWN = 'md'
+}
+
 export interface ExportOptions {
   format: 'json' | 'csv' | 'xlsx' | 'pdf';
   type: 'raw' | 'analytics' | 'performance' | 'custom';

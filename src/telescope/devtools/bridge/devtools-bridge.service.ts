@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class DevToolsBridgeService implements OnModuleInit {
-  private readonly logger = new Logger(DevToolsBridgeService.name);
+  protected readonly logger = new Logger(DevToolsBridgeService.name);
   
   constructor(
     private readonly telescopeService: TelescopeService,
@@ -36,7 +36,7 @@ export class DevToolsBridgeService implements OnModuleInit {
     }
   }
 
-  private transformToTelescopeFormat(entry: any, type: string): TelescopeEntry {
+  protected transformToTelescopeFormat(entry: any, type: string): TelescopeEntry {
     return {
       id: `devtools_${uuid()}`,
       type: `devtools-${type}`,

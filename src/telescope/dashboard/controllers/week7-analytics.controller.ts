@@ -92,11 +92,17 @@ export class Week7AnalyticsController {
     return this.jobWatcherService.getJobsByQueue(queueName, limit);
   }
 
-  @Get('jobs/health/:queueName?')
-  @ApiOperation({ summary: 'Get queue health status' })
-  @ApiParam({ name: 'queueName', required: false, description: 'Specific queue name' })
-  getQueueHealth(@Param('queueName') queueName?: string) {
+  @Get('jobs/health/:queueName')
+  @ApiOperation({ summary: 'Get queue health status for specific queue' })
+  @ApiParam({ name: 'queueName', description: 'Specific queue name' })
+  getQueueHealthByName(@Param('queueName') queueName: string) {
     return this.jobWatcherService.getQueueHealth(queueName);
+  }
+
+  @Get('jobs/health')
+  @ApiOperation({ summary: 'Get health status for all queues' })
+  getQueueHealth() {
+    return this.jobWatcherService.getQueueHealth();
   }
 
   @Get('jobs/stream')
@@ -120,18 +126,30 @@ export class Week7AnalyticsController {
     return this.cacheWatcherService.getRecentOperations(limit);
   }
 
-  @Get('cache/health/:instance?')
-  @ApiOperation({ summary: 'Get cache instance health' })
-  @ApiParam({ name: 'instance', required: false, description: 'Cache instance name' })
-  getCacheHealth(@Param('instance') instance?: string) {
+  @Get('cache/health/:instance')
+  @ApiOperation({ summary: 'Get specific cache instance health' })
+  @ApiParam({ name: 'instance', description: 'Cache instance name' })
+  getCacheHealthByInstance(@Param('instance') instance: string) {
     return this.cacheWatcherService.getCacheHealth(instance);
   }
 
-  @Get('cache/redis/info/:instance?')
-  @ApiOperation({ summary: 'Get Redis instance information' })
-  @ApiParam({ name: 'instance', required: false, description: 'Redis instance name' })
-  getRedisInfo(@Param('instance') instance?: string) {
+  @Get('cache/health')
+  @ApiOperation({ summary: 'Get health status for all cache instances' })
+  getCacheHealth() {
+    return this.cacheWatcherService.getCacheHealth();
+  }
+
+  @Get('cache/redis/info/:instance')
+  @ApiOperation({ summary: 'Get specific Redis instance information' })
+  @ApiParam({ name: 'instance', description: 'Redis instance name' })
+  getRedisInfoByInstance(@Param('instance') instance: string) {
     return this.cacheWatcherService.getRedisInfo(instance);
+  }
+
+  @Get('cache/redis/info')
+  @ApiOperation({ summary: 'Get Redis information for all instances' })
+  getRedisInfo() {
+    return this.cacheWatcherService.getRedisInfo();
   }
 
   @Get('cache/redis/health')
@@ -140,11 +158,17 @@ export class Week7AnalyticsController {
     return this.cacheWatcherService.getRedisHealth();
   }
 
-  @Get('cache/keyspace/:instance?')
-  @ApiOperation({ summary: 'Get Redis keyspace information' })
-  @ApiParam({ name: 'instance', required: false, description: 'Redis instance name' })
-  async getKeyspaceInfo(@Param('instance') instance?: string) {
+  @Get('cache/keyspace/:instance')
+  @ApiOperation({ summary: 'Get Redis keyspace information for specific instance' })
+  @ApiParam({ name: 'instance', description: 'Redis instance name' })
+  async getKeyspaceInfoByInstance(@Param('instance') instance: string) {
     return this.cacheWatcherService.getKeyspaceInfo(instance);
+  }
+
+  @Get('cache/keyspace')
+  @ApiOperation({ summary: 'Get Redis keyspace information for all instances' })
+  async getKeyspaceInfo() {
+    return this.cacheWatcherService.getKeyspaceInfo();
   }
 
   @Get('cache/stream')

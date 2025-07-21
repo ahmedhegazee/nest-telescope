@@ -28,7 +28,9 @@ export class StorageService implements StorageDriver {
       case "file":
         return new FileStorageDriver(this.config);
       case "database":
-        return new DatabaseStorageDriver(this.config);
+        throw new Error(
+          "Database storage driver requires TypeORM setup. Use memory, file, or redis instead."
+        );
       case "redis":
         return new RedisStorageDriver(this.config);
       default:

@@ -6,6 +6,7 @@ export interface TelescopeConfig {
   devtools: {
     enabled: boolean;
     port: number;
+    snapshot?: boolean;
     features: {
       dependencyGraph: boolean;
       interactivePlayground: boolean;
@@ -117,6 +118,13 @@ export interface TelescopeConfig {
         queueSize?: number;
         stalledJobs?: number;
         timeWindow?: number;
+        // Cache watcher alert thresholds
+        hitRate?: number;
+        missRate?: number;
+        avgResponseTime?: number;
+        errorRate?: number;
+        memoryUsage?: number;
+        connectionCount?: number;
       };
       bullIntegration?: {
         enabled: boolean;
