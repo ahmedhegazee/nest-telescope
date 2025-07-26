@@ -22,6 +22,11 @@ import { CacheWatcherService } from './watchers/cache/cache-watcher.service';
 import { BullAdapterService } from './watchers/job/bull-adapter.service';
 import { Week7AnalyticsController } from './dashboard/controllers/week7-analytics.controller';
 
+// Week 8 ML-powered services and modules
+import { MLAnalyticsService } from './core/services/ml-analytics.service';
+import { AutomatedAlertingService } from './core/services/automated-alerting.service';
+import { Week8MLAnalyticsController } from './dashboard/controllers/week8-ml-analytics.controller';
+
 @Module({
   providers: [Logger]
 })
@@ -48,7 +53,10 @@ export class TelescopeModule {
     return {
       module: TelescopeModule,
       imports,
-      controllers: [Week7AnalyticsController],
+      controllers: [
+        Week7AnalyticsController,
+        Week8MLAnalyticsController
+      ],
       providers: [
         // Configuration Provider
         {
@@ -90,6 +98,10 @@ export class TelescopeModule {
         PerformanceCorrelationService,
         ExportReportingService,
         
+        // Week 8 ML Services
+        MLAnalyticsService,
+        AutomatedAlertingService,
+        
         // Week 7 Watcher Services
         {
           provide: 'JOB_WATCHER_CONFIG',
@@ -118,6 +130,8 @@ export class TelescopeModule {
         ExportReportingService,
         JobWatcherService,
         CacheWatcherService,
+        MLAnalyticsService,
+        AutomatedAlertingService,
         'TELESCOPE_CONFIG'
       ]
     };

@@ -6,7 +6,7 @@ export interface TelescopeError {
   id: string;
   type: string;
   message: string;
-  stack?: string;
+  stack: string | undefined;
   context?: any;
   timestamp: Date;
   severity: 'low' | 'medium' | 'high' | 'critical';

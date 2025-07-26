@@ -1,53 +1,264 @@
 {
-  "name": "telescope_package",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "@nestjs/telescope",
+  "version": "12.0.0",
+  "description": "Advanced observability and monitoring solution for NestJS applications with ML-powered analytics, enterprise features, and production-ready scaling",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
-    "start": "node dist/main.js",
-    "start:dev": "ts-node src/main.ts",
-    "start:debug": "ts-node --inspect src/main.ts",
+    "build:prod": "tsc --project tsconfig.prod.json",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "verify-week1": "ts-node scripts/verify-week1.ts",
-    "telescope:stats": "ts-node scripts/telescope-stats.ts",
-    "telescope:monitor": "ts-node scripts/telescope-monitor.ts"
+    "test:performance": "ts-node test/week10-performance-load-test.ts",
+    "test:integration": "ts-node test/week9-integration.e2e-spec.ts",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run test && npm run lint",
+    "start": "node dist/main.js",
+    "start:dev": "ts-node src/main.ts",
+    "start:debug": "node --inspect-brk -r ts-node/register src/main.ts",
+    "start:prod": "node dist/main.js",
+    "migrate": "ts-node scripts/migrate.ts",
+    "seed": "ts-node scripts/seed.ts",
+    "docker:build": "docker build -t nestjs-telescope .",
+    "docker:run": "docker run -p 3000:3000 nestjs-telescope",
+    "docker:compose": "docker-compose up -d",
+    "k8s:deploy": "kubectl apply -f k8s/",
+    "k8s:delete": "kubectl delete -f k8s/",
+    "benchmark": "ts-node test/week9-performance.benchmark.ts",
+    "security:audit": "ts-node scripts/security-audit.ts",
+    "compliance:check": "ts-node scripts/compliance-check.ts",
+    "docs:generate": "typedoc --out docs src/",
+    "docs:serve": "http-server docs -p 8080",
+    "examples:run": "ts-node examples/week12-examples.ts",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "nestjs",
+    "telescope",
+    "observability",
+    "monitoring",
+    "analytics",
+    "ml",
+    "machine-learning",
+    "performance",
+    "debugging",
+    "enterprise",
+    "multi-tenant",
+    "scaling",
+    "production",
+    "typescript",
+    "nodejs"
+  ],
+  "author": {
+    "name": "NestJS Telescope Team",
+    "email": "telescope@nestjs.com",
+    "url": "https://nestjs.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nestjs/telescope.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nestjs/telescope/issues"
+  },
+  "homepage": "https://nestjs.com/telescope",
   "dependencies": {
-    "@nestjs/common": "^11.1.4",
-    "@nestjs/config": "^4.0.2",
-    "@nestjs/core": "^11.1.4",
-    "@nestjs/devtools-integration": "^0.2.0",
-    "@nestjs/platform-express": "^11.1.4",
-    "@nestjs/swagger": "^11.2.0",
-    "@nestjs/typeorm": "^11.0.0",
-    "@types/supertest": "^6.0.3",
+    "@nestjs/bull": "^10.0.0",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/event-emitter": "^2.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^4.0.0",
+    "@nestjs/swagger": "^7.0.0",
+    "@nestjs/terminus": "^10.0.0",
+    "@nestjs/typeorm": "^10.0.0",
+    "@slack/web-api": "^6.10.0",
+    "ajv": "^8.12.0",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.12.0",
+    "cheerio": "^1.0.0-rc.12",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.2",
-    "ioredis": "^5.6.1",
-    "pg": "^8.16.3",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
-    "sqlite3": "^5.1.7",
-    "supertest": "^7.1.3",
-    "typeorm": "^0.3.25",
-    "uuid": "^11.1.0"
+    "class-validator": "^0.14.0",
+    "clone-deep": "^4.0.1",
+    "compression": "^1.7.4",
+    "config": "^3.3.10",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "csv-parser": "^3.0.0",
+    "deepmerge": "^4.3.1",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "exceljs": "^4.4.0",
+    "express-rate-limit": "^7.1.5",
+    "express-slow-down": "^2.0.1",
+    "fast-deep-equal": "^3.1.3",
+    "helmet": "^7.1.0",
+    "ip": "^1.1.8",
+    "is-empty": "^1.2.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.5",
+    "nanoid": "^5.0.4",
+    "nodemailer": "^6.9.7",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-oauth2": "^1.7.0",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.11.3",
+    "pino": "^8.17.2",
+    "prom-client": "^15.0.0",
+    "puppeteer": "^21.6.1",
+    "redis": "^4.6.10",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.1",
+    "semver": "^7.5.4",
+    "sharp": "^0.33.0",
+    "socket.io": "^4.7.4",
+    "sqlite3": "^5.1.6",
+    "telegraf": "^4.15.6",
+    "twilio": "^4.19.0",
+    "typeorm": "^0.3.17",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0",
+    "ws": "^8.14.2",
+    "yup": "^1.3.3",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@nestjs/testing": "^11.1.4",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.0.14",
-    "@types/uuid": "^10.0.0",
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.23",
+    "@types/ip": "^1.1.0",
+    "@types/jest": "^29.5.8",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/lodash": "^4.14.202",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.10.0",
+    "@types/nodemailer": "^6.4.14",
+    "@types/passport": "^1.0.16",
+    "@types/passport-jwt": "^3.0.13",
+    "@types/passport-oauth2": "^1.4.14",
+    "@types/supertest": "^2.0.16",
+    "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "http-server": "^14.1.1",
     "jest": "^29.7.0",
-    "ts-jest": "^29.4.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.1.0",
+    "typedoc": "^0.25.7",
+    "typescript": "^5.3.2",
+    "wait-on": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "rxjs": "^7.8.1"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/common": {
+      "optional": false
+    },
+    "@nestjs/core": {
+      "optional": false
+    },
+    "rxjs": {
+      "optional": false
+    }
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/../test/jest.setup.ts"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "@nestjs/eslint-config",
+      "prettier"
+    ],
+    "rules": {
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/explicit-function-return-type": "warn",
+      "@typescript-eslint/no-explicit-any": "warn"
+    }
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 100,
+    "tabWidth": 2,
+    "semi": true
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/nest"
+  },
+  "collective": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/nest",
+    "logo": "https://opencollective.com/nest/logo.txt"
   }
 }
