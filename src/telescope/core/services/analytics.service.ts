@@ -715,11 +715,13 @@ export class AnalyticsService implements OnModuleInit {
     ];
 
     sorted.forEach(time => {
-      if (time < 100) buckets[0].count++;
-      else if (time < 500) buckets[1].count++;
-      else if (time < 1000) buckets[2].count++;
-      else if (time < 5000) buckets[3].count++;
-      else buckets[4].count++;
+      if (time !== undefined) {
+        if (time < 100) buckets[0]!.count++;
+        else if (time < 500) buckets[1]!.count++;
+        else if (time < 1000) buckets[2]!.count++;
+        else if (time < 5000) buckets[3]!.count++;
+        else buckets[4]!.count++;
+      }
     });
 
     buckets.forEach(bucket => {
@@ -729,11 +731,11 @@ export class AnalyticsService implements OnModuleInit {
     return {
       buckets,
       percentiles: {
-        p50: sorted[Math.floor(sorted.length * 0.5)],
-        p75: sorted[Math.floor(sorted.length * 0.75)],
-        p90: sorted[Math.floor(sorted.length * 0.9)],
-        p95: sorted[Math.floor(sorted.length * 0.95)],
-        p99: sorted[Math.floor(sorted.length * 0.99)],
+        p50: sorted[Math.floor(sorted.length * 0.5)] || 0,
+        p75: sorted[Math.floor(sorted.length * 0.75)] || 0,
+        p90: sorted[Math.floor(sorted.length * 0.9)] || 0,
+        p95: sorted[Math.floor(sorted.length * 0.95)] || 0,
+        p99: sorted[Math.floor(sorted.length * 0.99)] || 0,
       },
     };
   }
@@ -769,7 +771,9 @@ export class AnalyticsService implements OnModuleInit {
 
     return Array.from(endpointMap.entries())
       .map(([endpoint, data]) => {
-        const [method, path] = endpoint.split(' ', 2);
+        const parts = endpoint.split(' ', 2);
+        const method = parts[0] || 'GET';
+        const path = parts[1] || '/';
         const sortedTimes = data.times.sort((a, b) => a - b);
         const p95Index = Math.floor(sortedTimes.length * 0.95);
 
@@ -1229,8 +1233,8 @@ export class AnalyticsService implements OnModuleInit {
     const trafficTrend = this.calculateTrafficTrends(entries);
     if (trafficTrend.length >= 3) {
       const recent = trafficTrend.slice(-3);
-      const avgChange = (recent[2].value - recent[0].value) / 2;
-      const predicted = recent[2].value + avgChange;
+      const avgChange = (recent[2]!.value - recent[0]!.value) / 2;
+      const predicted = recent[2]!.value + avgChange;
       
       predictions.push({
         metric: 'traffic',
@@ -1245,8 +1249,8 @@ export class AnalyticsService implements OnModuleInit {
     const perfTrend = this.calculatePerformanceTrends(entries);
     if (perfTrend.length >= 3) {
       const recent = perfTrend.slice(-3);
-      const avgChange = (recent[2].value - recent[0].value) / 2;
-      const predicted = recent[2].value + avgChange;
+      const avgChange = (recent[2]!.value - recent[0]!.value) / 2;
+      const predicted = recent[2]!.value + avgChange;
       
       predictions.push({
         metric: 'response_time',

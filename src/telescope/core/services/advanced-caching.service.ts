@@ -119,9 +119,22 @@ export class AdvancedCachingService implements OnModuleInit {
   ) {
     // Merge telescope config with complete default config following NestJS patterns
     const defaultConfig = this.getDefaultCacheConfig();
-    this.config = this.telescopeConfig.caching 
-      ? { ...defaultConfig, ...this.telescopeConfig.caching } as CacheConfig
-      : defaultConfig;
+    if (this.telescopeConfig.caching) {
+      // Deep merge partial config with defaults for NestJS compatibility
+      this.config = {
+        ...defaultConfig,
+        enabled: this.telescopeConfig.caching.enabled ?? defaultConfig.enabled,
+        tiers: {
+          l1: { ...defaultConfig.tiers.l1, ...this.telescopeConfig.caching.tiers?.l1 },
+          l2: { ...defaultConfig.tiers.l2, ...this.telescopeConfig.caching.tiers?.l2 },
+          l3: { ...defaultConfig.tiers.l3, ...this.telescopeConfig.caching.tiers?.l3 },
+        },
+        strategies: { ...defaultConfig.strategies, ...this.telescopeConfig.caching.policies },
+        monitoring: { ...defaultConfig.monitoring },
+      };
+    } else {
+      this.config = defaultConfig;
+    }
     this.metrics = this.initializeMetrics();
   }
 
@@ -694,14 +707,14 @@ export class AdvancedCachingService implements OnModuleInit {
         keyToEvict = this.accessOrder[0] || null;
         break;
       case "lfu":
-        keyToEvict = this.findLeastFrequentlyUsed() || null;
+        keyToEvict = this.findLeastFrequentlyUsed();
         break;
       case "fifo":
         keyToEvict = this.accessOrder[0] || null;
         break;
       case "random":
         const keys = Array.from(this.l1Cache.keys());
-        keyToEvict = keys[Math.floor(Math.random() * keys.length)];
+        keyToEvict = keys[Math.floor(Math.random() * keys.length)] || null;
         break;
     }
 
@@ -712,9 +725,9 @@ export class AdvancedCachingService implements OnModuleInit {
     }
   }
 
-  private findLeastFrequentlyUsed(): string {
+  private findLeastFrequentlyUsed(): string | null {
     let minAccessCount = Infinity;
-    let leastUsedKey = "";
+    let leastUsedKey: string | null = null;
 
     for (const [key, entry] of this.l1Cache.entries()) {
       if (entry.accessCount < minAccessCount) {

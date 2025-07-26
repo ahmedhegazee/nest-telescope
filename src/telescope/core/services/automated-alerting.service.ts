@@ -64,14 +64,14 @@ export interface AlertRule {
 export interface AlertHistory {
   id: string;
   alertId: string;
-  ruleId?: string;
+  ruleId: string | undefined;
   timestamp: Date;
   status: 'sent' | 'failed' | 'acknowledged' | 'resolved';
   channel: string;
-  recipient?: string;
+  recipient: string | undefined;
   retryCount: number;
-  error?: string;
-  responseTime?: number;
+  error: string | undefined;
+  responseTime: number | undefined;
 }
 
 export interface AlertAggregation {
@@ -88,7 +88,7 @@ export interface AlertAggregation {
 
 export interface AlertMetrics {
   totalAlerts: number;
-  alertsByseverity: Record<string, number>;
+  alertsBySeverity: Record<string, number>;
   alertsByComponent: Record<string, number>;
   alertsByChannel: Record<string, number>;
   averageResponseTime: number;
@@ -477,7 +477,10 @@ export class AutomatedAlertingService implements OnModuleInit, OnModuleDestroy {
       timestamp: new Date(),
       status: 'sent',
       channel: channel.name,
-      retryCount: 0
+      recipient: undefined,
+      retryCount: 0,
+      error: undefined,
+      responseTime: undefined
     };
 
     try {
@@ -502,9 +505,11 @@ export class AutomatedAlertingService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Alert sent successfully: ${alert.title} via ${channel.name}`);
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
       historyEntry.status = 'failed';
-      historyEntry.error = error.message;
-      this.logger.error(`Failed to send alert: ${error.message}`, error.stack);
+      historyEntry.error = errorMessage;
+      this.logger.error(`Failed to send alert: ${errorMessage}`, errorStack);
 
       // Schedule retry if within retry limits
       if (historyEntry.retryCount < this.config.retryAttempts) {
@@ -571,7 +576,8 @@ export class AutomatedAlertingService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.sendAlert(alert, channel);
     } catch (error) {
-      this.logger.error(`Retry ${historyEntry.retryCount} failed for alert ${alert.id}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Retry ${historyEntry.retryCount} failed for alert ${alert.id}: ${errorMessage}`);
     }
   }
 
@@ -653,7 +659,7 @@ export class AutomatedAlertingService implements OnModuleInit, OnModuleDestroy {
 
   private parseTime(timeStr: string): number {
     const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
+    return (hours || 0) * 60 + (minutes || 0);
   }
 
   private cleanupOldHistory() {
