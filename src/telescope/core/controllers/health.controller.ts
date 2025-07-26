@@ -189,9 +189,10 @@ export class HealthController {
         lastChecked: new Date()
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'unhealthy',
-        message: `Telescope check failed: ${error.message}`,
+        message: `Telescope check failed: ${errorMessage}`,
         lastChecked: new Date()
       };
     }
@@ -221,9 +222,10 @@ export class HealthController {
         lastChecked: new Date()
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'unhealthy',
-        message: `Metrics check failed: ${error.message}`,
+        message: `Metrics check failed: ${errorMessage}`,
         lastChecked: new Date()
       };
     }
@@ -252,9 +254,10 @@ export class HealthController {
         lastChecked: new Date()
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'unhealthy',
-        message: `Bridge check failed: ${error.message}`,
+        message: `Bridge check failed: ${errorMessage}`,
         lastChecked: new Date()
       };
     }
@@ -296,9 +299,10 @@ export class HealthController {
         lastChecked: new Date()
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'unhealthy',
-        message: `Storage check failed: ${error.message}`,
+        message: `Storage check failed: ${errorMessage}`,
         lastChecked: new Date()
       };
     }

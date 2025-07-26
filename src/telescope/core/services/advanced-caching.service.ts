@@ -96,7 +96,7 @@ export interface CacheOperation {
   timestamp: Date;
   duration: number;
   success: boolean;
-  error?: string;
+  error: string | undefined;
 }
 
 @Injectable()
@@ -117,7 +117,11 @@ export class AdvancedCachingService implements OnModuleInit {
     @Inject("TELESCOPE_CONFIG")
     private readonly telescopeConfig: TelescopeConfig
   ) {
-    this.config = this.telescopeConfig.caching || this.getDefaultCacheConfig();
+    // Merge telescope config with complete default config following NestJS patterns
+    const defaultConfig = this.getDefaultCacheConfig();
+    this.config = this.telescopeConfig.caching 
+      ? { ...defaultConfig, ...this.telescopeConfig.caching } as CacheConfig
+      : defaultConfig;
     this.metrics = this.initializeMetrics();
   }
 
@@ -245,13 +249,12 @@ export class AdvancedCachingService implements OnModuleInit {
   private startMonitoring(): void {
     if (!this.config.monitoring.enabled) return;
 
-    this.monitoringInterval = interval(
-      this.config.monitoring.metricsInterval
-    ).subscribe(() => {
+    // Use regular setInterval for NodeJS.Timeout compatibility
+    this.monitoringInterval = setInterval(() => {
       this.updateMetrics();
       this.checkThresholds();
       this.metricsSubject.next(this.metrics);
-    });
+    }, this.config.monitoring.metricsInterval);
   }
 
   // Core caching methods
@@ -310,14 +313,15 @@ export class AdvancedCachingService implements OnModuleInit {
       this.recordOperation("get", key, tier, Date.now() - startTime, false);
       return null;
     } catch (error) {
-      this.logger.error(`Cache get error for key ${key}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Cache get error for key ${key}: ${errorMessage}`);
       this.recordOperation(
         "get",
         key,
         tier,
         Date.now() - startTime,
         false,
-        error.message
+        errorMessage
       );
       return null;
     }
@@ -368,14 +372,15 @@ export class AdvancedCachingService implements OnModuleInit {
 
       this.recordOperation("set", key, tier, Date.now() - startTime, true);
     } catch (error) {
-      this.logger.error(`Cache set error for key ${key}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Cache set error for key ${key}: ${errorMessage}`);
       this.recordOperation(
         "set",
         key,
         tier,
         Date.now() - startTime,
         false,
-        error.message
+        errorMessage
       );
     }
   }
@@ -412,14 +417,15 @@ export class AdvancedCachingService implements OnModuleInit {
       );
       return deleted;
     } catch (error) {
-      this.logger.error(`Cache delete error for key ${key}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Cache delete error for key ${key}: ${errorMessage}`);
       this.recordOperation(
         "delete",
         key,
         tier,
         Date.now() - startTime,
         false,
-        error.message
+        errorMessage
       );
       return false;
     }
@@ -472,14 +478,15 @@ export class AdvancedCachingService implements OnModuleInit {
       );
       this.logger.log(`Cache cleared for tier: ${tier || "all"}`);
     } catch (error) {
-      this.logger.error(`Cache clear error: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Cache clear error: ${errorMessage}`);
       this.recordOperation(
         "clear",
         "all",
         tier || "l1",
         Date.now() - startTime,
         false,
-        error.message
+        errorMessage
       );
     }
   }
@@ -684,13 +691,13 @@ export class AdvancedCachingService implements OnModuleInit {
 
     switch (this.config.strategies.evictionPolicy) {
       case "lru":
-        keyToEvict = this.accessOrder[0];
+        keyToEvict = this.accessOrder[0] || null;
         break;
       case "lfu":
-        keyToEvict = this.findLeastFrequentlyUsed();
+        keyToEvict = this.findLeastFrequentlyUsed() || null;
         break;
       case "fifo":
-        keyToEvict = this.accessOrder[0];
+        keyToEvict = this.accessOrder[0] || null;
         break;
       case "random":
         const keys = Array.from(this.l1Cache.keys());
@@ -868,7 +875,8 @@ export class AdvancedCachingService implements OnModuleInit {
         // This would typically load data from the source
         await this.get(key);
       } catch (error) {
-        this.logger.warn(`Failed to warm up key ${key}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.warn(`Failed to warm up key ${key}: ${errorMessage}`);
       }
     }
   }
