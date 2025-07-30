@@ -4,6 +4,10 @@ import { TelescopeService } from '../../core/services/telescope.service';
 import { TelescopeEntry } from '../../core/interfaces/telescope-entry.interface';
 import { TelescopeConfig } from '../../core/interfaces/telescope-config.interface';
 import { RequestContext, ResponseContext } from './request-watcher.interceptor';
+import { DataMaskingService } from '../../core/services/data-masking.service';
+import { EnhancedCircuitBreakerService } from '../../core/services/enhanced-circuit-breaker.service';
+import { EnhancedMemoryManagerService } from '../../core/services/enhanced-memory-manager.service';
+import { AdaptiveSamplingService } from '../../core/services/adaptive-sampling.service';
 
 export interface RequestWatcherConfig {
   enabled: boolean;
@@ -53,12 +57,14 @@ export class RequestWatcherService {
   private readonly logger = new Logger(RequestWatcherService.name);
   private readonly config: RequestWatcherConfig;
   private readonly requestMetrics: RequestMetrics;
-  private readonly requestTimeline: number[] = [];
-  private readonly maxTimelineSize = 1000;
 
   constructor(
     private readonly telescopeService: TelescopeService,
-    @Inject('TELESCOPE_CONFIG') private readonly telescopeConfig: TelescopeConfig
+    @Inject('TELESCOPE_CONFIG') private readonly telescopeConfig: TelescopeConfig,
+    private readonly dataMaskingService: DataMaskingService,
+    private readonly circuitBreakerService: EnhancedCircuitBreakerService,
+    private readonly memoryManagerService: EnhancedMemoryManagerService,
+    private readonly adaptiveSamplingService: AdaptiveSamplingService,
   ) {
     this.config = this.buildConfig(telescopeConfig);
     this.requestMetrics = this.initializeMetrics();
@@ -75,7 +81,7 @@ export class RequestWatcherService {
         '/robots.txt',
         '/_next',
         '/static',
-        '/assets'
+        '/assets',
       ],
       sampling: {
         enabled: true,
@@ -85,8 +91,8 @@ export class RequestWatcherService {
           { path: '/api/metrics', rate: 10, priority: 1 },
           { path: '/api', method: 'GET', rate: 50, priority: 2 },
           { path: '/api', method: 'POST', rate: 100, priority: 3 },
-          { path: '/api', statusCode: 500, rate: 100, priority: 4 }
-        ]
+          { path: '/api', statusCode: 500, rate: 100, priority: 4 },
+        ],
       },
       security: {
         maskSensitiveData: true,
@@ -98,48 +104,37 @@ export class RequestWatcherService {
           'secret',
           'key',
           'auth',
-          'credit',
+          'authorization',
+          'credential',
+          'pin',
           'ssn',
-          'email',
-          'phone'
-        ]
+          'social',
+          'card',
+          'account',
+        ],
       },
       performance: {
         slowRequestThreshold: 1000,
-        collectMetrics: true
+        collectMetrics: true,
       },
       filters: {
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        methods: [],
         statusCodes: [],
-        contentTypes: []
-      }
+        contentTypes: [],
+      },
     };
 
-    const requestWatcherConfig = config.watchers?.request;
-    if (typeof requestWatcherConfig === 'object') {
-      return {
-        ...defaultConfig,
-        ...requestWatcherConfig,
-        sampling: {
-          ...defaultConfig.sampling,
-          ...(requestWatcherConfig.sampling || {})
-        },
-        security: {
-          ...defaultConfig.security,
-          ...(requestWatcherConfig.security || {})
-        },
-        performance: {
-          ...defaultConfig.performance,
-          ...(requestWatcherConfig.performance || {})
-        },
-        filters: {
-          ...defaultConfig.filters,
-          ...(requestWatcherConfig.filters || {})
-        }
-      };
+    const mergedConfig = {
+      ...defaultConfig,
+      ...config.watchers?.request,
+    } as RequestWatcherConfig;
+
+    // Ensure sampling rules are preserved
+    if (config.watchers?.request?.sampling && !(config.watchers.request.sampling as any).rules) {
+      (mergedConfig.sampling as any).rules = defaultConfig.sampling.rules;
     }
 
-    return defaultConfig;
+    return mergedConfig;
   }
 
   private initializeMetrics(): RequestMetrics {
@@ -150,53 +145,105 @@ export class RequestWatcherService {
       averageResponseTime: 0,
       requestsPerSecond: 0,
       statusCodeDistribution: {},
-      methodDistribution: {}
+      methodDistribution: {},
     };
   }
 
-  trackRequest(
+  async trackRequest(
     requestContext: RequestContext,
     responseContext: ResponseContext,
-    error: Error | null
-  ): void {
+    error: Error | null,
+  ): Promise<void> {
     if (!this.config.enabled) {
       return;
     }
 
-    try {
-      // Create telescope entry
-      const entry = this.createTelescopeEntry(requestContext, responseContext, error);
-      
-      // Record the request
-      this.telescopeService.record(entry);
-      
-      // Update metrics
-      if (this.config.performance.collectMetrics) {
-        this.updateMetrics(requestContext, responseContext, error);
-      }
-      
-      // Log slow requests
-      if (responseContext.duration > this.config.performance.slowRequestThreshold) {
-        this.logger.warn(`Slow request detected: ${requestContext.method} ${requestContext.url} (${responseContext.duration}ms)`);
-      }
-      
-      // Log errors
-      if (error || responseContext.statusCode >= 400) {
-        this.logger.warn(`Request error: ${requestContext.method} ${requestContext.url} - ${responseContext.statusCode}`, error?.message);
-      }
-    } catch (trackingError) {
-      this.logger.error('Failed to track request:', trackingError);
-    }
+    // Use circuit breaker for tracking operations
+    await this.circuitBreakerService.executeWithFallback(
+      'trackRequest',
+      async () => {
+        // Check sampling decision
+        if (!this.adaptiveSamplingService.shouldSample(requestContext, error || undefined)) {
+          return;
+        }
+
+        // Create telescope entry with enhanced security
+        const entry = await this.createTelescopeEntry(requestContext, responseContext, error);
+
+        // Record the request with buffering
+        await this.telescopeService.record(entry);
+
+        // Update metrics with memory management
+        if (this.config.performance.collectMetrics) {
+          await this.updateMetrics(requestContext, responseContext, error);
+        }
+
+        // Log slow requests
+        if (responseContext.duration > this.config.performance.slowRequestThreshold) {
+          this.logger.warn(
+            `Slow request detected: ${requestContext.method} ${requestContext.url} (${responseContext.duration}ms)`,
+          );
+        }
+
+        // Log errors with safe data masking
+        if (error || responseContext.statusCode >= 400) {
+          const safeSummary = this.dataMaskingService.createSafeSummary({
+            method: requestContext.method,
+            url: requestContext.url,
+            statusCode: responseContext.statusCode,
+            error: error?.message,
+          });
+          this.logger.warn(`Request error: ${safeSummary}`);
+        }
+      },
+      async () => {
+        // Fallback: log error but don't fail the request
+        this.logger.warn(
+          `Request tracking failed, using fallback for: ${requestContext.method} ${requestContext.url}`,
+        );
+
+        // Still update basic metrics in memory
+        this.memoryManagerService.addTimelineEntry('request-tracking-failures', {
+          method: requestContext.method,
+          url: requestContext.url,
+          timestamp: Date.now(),
+          reason: 'circuit-breaker-fallback',
+        });
+      },
+    );
   }
 
-  private createTelescopeEntry(
+  private async createTelescopeEntry(
     requestContext: RequestContext,
     responseContext: ResponseContext,
-    error: Error | null
-  ): TelescopeEntry {
+    error: Error | null,
+  ): Promise<TelescopeEntry> {
     const entryId = `req_${requestContext.id}`;
     const familyHash = this.generateFamilyHash(requestContext);
-    
+
+    // Enhanced data masking
+    const maskedRequestData = this.config.security.maskSensitiveData
+      ? this.dataMaskingService.maskSensitiveData({
+          headers: requestContext.headers,
+          query: requestContext.query,
+          body: requestContext.body,
+        })
+      : {
+          headers: requestContext.headers,
+          query: requestContext.query,
+          body: requestContext.body,
+        };
+
+    const maskedResponseData = this.config.security.maskSensitiveData
+      ? this.dataMaskingService.maskSensitiveData({
+          headers: responseContext.headers,
+          body: responseContext.body,
+        })
+      : {
+          headers: responseContext.headers,
+          body: responseContext.body,
+        };
+
     return {
       id: entryId,
       type: 'request',
@@ -206,41 +253,46 @@ export class RequestWatcherService {
           id: requestContext.id,
           method: requestContext.method,
           url: requestContext.url,
-          headers: requestContext.headers,
-          query: requestContext.query,
-          body: requestContext.body,
+          headers: maskedRequestData.headers,
+          query: maskedRequestData.query,
+          body: maskedRequestData.body,
           userAgent: requestContext.userAgent,
           ip: requestContext.ip,
           sessionId: requestContext.sessionId,
           userId: requestContext.userId,
           traceId: requestContext.traceId,
-          timestamp: new Date(requestContext.startTime).toISOString()
+          timestamp: new Date(requestContext.startTime).toISOString(),
         },
         response: {
           statusCode: responseContext.statusCode,
-          headers: responseContext.headers,
-          body: responseContext.body,
+          headers: maskedResponseData.headers,
+          body: maskedResponseData.body,
           size: responseContext.size,
           duration: responseContext.duration,
-          timestamp: new Date(responseContext.endTime).toISOString()
+          timestamp: new Date(responseContext.endTime).toISOString(),
         },
-        error: error ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        } : null,
+        error: error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            }
+          : null,
         performance: {
           duration: responseContext.duration,
-          slow: responseContext.duration > this.config.performance.slowRequestThreshold
+          slow: responseContext.duration > this.config.performance.slowRequestThreshold,
         },
         security: {
           masked: this.config.security.maskSensitiveData,
-          sensitiveDetected: this.detectSensitiveData(requestContext, responseContext)
-        }
+          sensitiveDetected: this.dataMaskingService.detectSensitiveData({
+            request: requestContext,
+            response: responseContext,
+          }),
+        },
       },
       tags: this.generateTags(requestContext, responseContext, error),
       timestamp: new Date(requestContext.startTime),
-      sequence: Date.now()
+      sequence: Date.now(),
     };
   }
 
@@ -254,16 +306,16 @@ export class RequestWatcherService {
   private generateTags(
     requestContext: RequestContext,
     responseContext: ResponseContext,
-    error: Error | null
+    error: Error | null,
   ): string[] {
     const tags: string[] = ['request'];
-    
+
     // Method tag
     tags.push(`method:${requestContext.method.toLowerCase()}`);
-    
+
     // Status code tag
     tags.push(`status:${responseContext.statusCode}`);
-    
+
     // Status category tags
     if (responseContext.statusCode >= 200 && responseContext.statusCode < 300) {
       tags.push('success');
@@ -272,196 +324,159 @@ export class RequestWatcherService {
     } else if (responseContext.statusCode >= 500) {
       tags.push('server-error');
     }
-    
+
     // Performance tags
     if (responseContext.duration > this.config.performance.slowRequestThreshold) {
       tags.push('slow');
     }
-    
+
     if (responseContext.duration < 100) {
       tags.push('fast');
     }
-    
+
     // Authentication tags
     if (requestContext.userId) {
       tags.push('authenticated');
     } else {
       tags.push('anonymous');
     }
-    
+
     // Session tags
     if (requestContext.sessionId) {
       tags.push('session');
     }
-    
+
     // Error tags
     if (error) {
       tags.push('error');
-      tags.push(`error:${error.name}`);
+      tags.push(`error-type:${error.name}`);
     }
-    
-    // Route tags
-    const pathParts = requestContext.url.split('/').filter(part => part.length > 0);
-    if (pathParts.length > 0) {
-      tags.push(`route:${pathParts[0]}`);
+
+    // Sensitive data tag
+    if (
+      this.dataMaskingService.detectSensitiveData({
+        request: requestContext,
+        response: responseContext,
+      })
+    ) {
+      tags.push('sensitive-data');
     }
-    
+
     return tags;
   }
 
-  private detectSensitiveData(requestContext: RequestContext, responseContext: ResponseContext): boolean {
-    const allData = JSON.stringify({
-      query: requestContext.query,
-      body: requestContext.body,
-      responseBody: responseContext.body
-    }).toLowerCase();
-    
-    return this.config.security.sensitiveKeys.some(key => 
-      allData.includes(key.toLowerCase())
-    );
-  }
-
-  private updateMetrics(
+  private async updateMetrics(
     requestContext: RequestContext,
     responseContext: ResponseContext,
-    error: Error | null
-  ): void {
-    // Update basic counters
-    this.requestMetrics.totalRequests++;
-    
-    if (responseContext.duration > this.config.performance.slowRequestThreshold) {
-      this.requestMetrics.slowRequests++;
-    }
-    
-    if (error || responseContext.statusCode >= 400) {
-      this.requestMetrics.errorRequests++;
-    }
-    
-    // Update status code distribution
-    const statusCode = responseContext.statusCode;
-    this.requestMetrics.statusCodeDistribution[statusCode] = 
-      (this.requestMetrics.statusCodeDistribution[statusCode] || 0) + 1;
-    
-    // Update method distribution
-    const method = requestContext.method;
-    this.requestMetrics.methodDistribution[method] = 
-      (this.requestMetrics.methodDistribution[method] || 0) + 1;
-    
-    // Update timeline for RPS calculation
-    this.requestTimeline.push(requestContext.startTime);
-    if (this.requestTimeline.length > this.maxTimelineSize) {
-      this.requestTimeline.shift();
-    }
-    
-    // Recalculate average response time
-    this.recalculateAverageResponseTime(responseContext.duration);
-    
-    // Recalculate requests per second
-    this.recalculateRequestsPerSecond();
-  }
+    error: Error | null,
+  ): Promise<void> {
+    try {
+      // Update basic metrics
+      this.requestMetrics.totalRequests++;
 
-  private recalculateAverageResponseTime(newDuration: number): void {
-    const totalRequests = this.requestMetrics.totalRequests;
-    const oldAverage = this.requestMetrics.averageResponseTime;
-    
-    this.requestMetrics.averageResponseTime = 
-      ((oldAverage * (totalRequests - 1)) + newDuration) / totalRequests;
-  }
-
-  private recalculateRequestsPerSecond(): void {
-    if (this.requestTimeline.length < 2) {
-      this.requestMetrics.requestsPerSecond = 0;
-      return;
-    }
-    
-    const now = Date.now();
-    const oneMinuteAgo = now - 60000;
-    const recentRequests = this.requestTimeline.filter(timestamp => timestamp > oneMinuteAgo);
-    
-    this.requestMetrics.requestsPerSecond = recentRequests.length / 60;
-  }
-
-  shouldTrackRequest(request: Request): boolean {
-    if (!this.config.enabled) {
-      return false;
-    }
-
-    // Check method filter
-    if (this.config.filters.methods.length > 0) {
-      if (!this.config.filters.methods.includes(request.method)) {
-        return false;
+      if (responseContext.duration > this.config.performance.slowRequestThreshold) {
+        this.requestMetrics.slowRequests++;
       }
-    }
 
-    return true;
+      if (error || responseContext.statusCode >= 400) {
+        this.requestMetrics.errorRequests++;
+      }
+
+      // Update status code distribution
+      this.requestMetrics.statusCodeDistribution[responseContext.statusCode] =
+        (this.requestMetrics.statusCodeDistribution[responseContext.statusCode] || 0) + 1;
+
+      // Update method distribution
+      this.requestMetrics.methodDistribution[requestContext.method] =
+        (this.requestMetrics.methodDistribution[requestContext.method] || 0) + 1;
+
+      // Calculate average response time
+      const totalTime =
+        this.requestMetrics.averageResponseTime * (this.requestMetrics.totalRequests - 1);
+      this.requestMetrics.averageResponseTime =
+        (totalTime + responseContext.duration) / this.requestMetrics.totalRequests;
+
+      // Store metrics in memory manager with TTL
+      this.memoryManagerService.addMetricsEntry(
+        'request-metrics',
+        {
+          url: requestContext.url,
+          method: requestContext.method,
+          statusCode: responseContext.statusCode,
+          duration: responseContext.duration,
+          error: error ? error.message : null,
+        },
+        this.config.performance.collectMetrics ? 300000 : undefined, // 5 minutes TTL
+      );
+
+      // Add to timeline for analysis
+      this.memoryManagerService.addTimelineEntry('requests', {
+        method: requestContext.method,
+        url: requestContext.url,
+        duration: responseContext.duration,
+        statusCode: responseContext.statusCode,
+        timestamp: Date.now(),
+      });
+    } catch (metricsError) {
+      this.logger.error('Failed to update request metrics:', metricsError);
+    }
   }
 
-  shouldSampleRequest(request: Request): boolean {
-    if (!this.config.sampling.enabled) {
-      return true;
-    }
-
-    // Find applicable sampling rules
-    const applicableRules = this.config.sampling.rules
-      .filter(rule => this.matchesRule(request, rule))
-      .sort((a, b) => b.priority - a.priority);
-
-    // Use the highest priority rule
-    const rule = applicableRules[0];
-    const sampleRate = rule ? rule.rate : this.config.sampling.rate;
-
-    return Math.random() * 100 < sampleRate;
+  getMetrics(): RequestMetrics & {
+    samplingStats: any;
+    memoryStats: any;
+    circuitBreakerStats: any;
+  } {
+    return {
+      ...this.requestMetrics,
+      samplingStats: this.adaptiveSamplingService.getStats(),
+      memoryStats: this.memoryManagerService.getMemoryStats(),
+      circuitBreakerStats: this.circuitBreakerService.getAllStats(),
+    };
   }
 
-  private matchesRule(request: Request, rule: SamplingRule): boolean {
-    // Check path
-    if (!request.path.startsWith(rule.path)) {
-      return false;
-    }
+  async clearMetrics(): Promise<void> {
+    // Reset internal metrics
+    Object.assign(this.requestMetrics, this.initializeMetrics());
 
-    // Check method
-    if (rule.method && request.method !== rule.method) {
-      return false;
-    }
+    // Clear memory manager data
+    this.memoryManagerService.clearAll();
 
-    // Note: statusCode check would happen after response
-    return true;
+    // Reset sampling stats
+    this.adaptiveSamplingService.resetStats();
+
+    this.logger.debug('Request metrics cleared');
   }
 
-  shouldMaskBody(body: any): boolean {
-    if (!this.config.security.maskSensitiveData) {
-      return false;
-    }
-
-    if (!body || typeof body !== 'object') {
-      return false;
-    }
-
-    // Check if body contains sensitive data
-    const bodyString = JSON.stringify(body).toLowerCase();
-    return this.config.security.sensitiveKeys.some(key => 
-      bodyString.includes(key.toLowerCase())
-    );
-  }
-
-  shouldLogSuccessfulResponseBodies(): boolean {
-    return this.config.security.logSuccessfulResponseBodies;
-  }
-
+  // Methods required by the interceptor
   getExcludedPaths(): string[] {
     return this.config.excludePaths;
   }
 
-  getMetrics(): RequestMetrics {
-    return { ...this.requestMetrics };
+  shouldSampleRequest(request: any): boolean {
+    if (!this.config.sampling.enabled) {
+      return true;
+    }
+
+    // Check if request matches any sampling rules
+    const matchingRule = this.config.sampling.rules.find((rule) => {
+      if (rule.path && !request.url.includes(rule.path)) return false;
+      if (rule.method && rule.method !== request.method) return false;
+      return true;
+    });
+
+    if (matchingRule) {
+      return Math.random() * 100 < matchingRule.rate;
+    }
+
+    return Math.random() * 100 < this.config.sampling.rate;
   }
 
-  getConfig(): RequestWatcherConfig {
-    return { ...this.config };
+  shouldMaskBody(body: any): boolean {
+    return this.config.security.maskSensitiveData;
   }
 
-  resetMetrics(): void {
-    Object.assign(this.requestMetrics, this.initializeMetrics());
-    this.requestTimeline.length = 0;
+  shouldLogSuccessfulResponseBodies(): boolean {
+    return this.config.security.logSuccessfulResponseBodies;
   }
 }

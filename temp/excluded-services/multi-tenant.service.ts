@@ -1,14 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Observable, Subject, interval, Subscription } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
-import { TelescopeConfig } from '../interfaces/telescope-config.interface';
-import { Inject } from '@nestjs/common';
-import * as crypto from 'crypto';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Observable, Subject, interval } from "rxjs";
+import { map, filter, debounceTime } from "rxjs/operators";
+import { TelescopeConfig } from "../interfaces/telescope-config.interface";
+import { Inject } from "@nestjs/common";
+import * as crypto from "crypto";
 
 export interface MultiTenantConfig {
   enabled: boolean;
   isolation: {
-    strategy: 'database' | 'schema' | 'row' | 'application';
+    strategy: "database" | "schema" | "row" | "application";
     databasePrefix: string;
     schemaPrefix: string;
   };
@@ -41,8 +41,8 @@ export interface Tenant {
   name: string;
   slug: string;
   domain?: string;
-  status: 'active' | 'suspended' | 'pending' | 'deleted';
-  plan: 'free' | 'basic' | 'professional' | 'enterprise';
+  status: "active" | "suspended" | "pending" | "deleted";
+  plan: "free" | "basic" | "professional" | "enterprise";
   createdAt: Date;
   updatedAt: Date;
   metadata: {
@@ -111,7 +111,7 @@ export interface TenantBranding {
   companyName?: string;
   customCss?: string;
   customJs?: string;
-  theme: 'light' | 'dark' | 'auto';
+  theme: "light" | "dark" | "auto";
 }
 
 export interface SlackIntegration {
@@ -135,7 +135,7 @@ export interface EmailIntegration {
 
 export interface WebhookIntegration {
   url: string;
-  method: 'GET' | 'POST' | 'PUT';
+  method: "GET" | "POST" | "PUT";
   headers: Record<string, string>;
   enabled: boolean;
 }
@@ -190,35 +190,34 @@ export class MultiTenantService implements OnModuleInit {
   private readonly tenantSubject = new Subject<Tenant>();
   private readonly metricsSubject = new Subject<TenantMetrics>();
   private readonly quotaSubject = new Subject<TenantQuotaExceeded>();
-  private monitoringInterval: Subscription | null = null;
+  private monitoringInterval: NodeJS.Timeout | null = null;
 
   constructor(
-    @Inject('TELESCOPE_CONFIG')
-    private readonly telescopeConfig: TelescopeConfig,
+    @Inject("TELESCOPE_CONFIG")
+    private readonly telescopeConfig: TelescopeConfig
   ) {
     this.config =
-      (this.telescopeConfig.multiTenant as unknown as MultiTenantConfig) ||
-      this.getDefaultMultiTenantConfig();
+      this.telescopeConfig.multiTenant || this.getDefaultMultiTenantConfig();
   }
 
   async onModuleInit(): Promise<void> {
     if (!this.config.enabled) {
-      this.logger.log('Multi-tenant support disabled');
+      this.logger.log("Multi-tenant support disabled");
       return;
     }
 
     await this.initializeMultiTenancy();
     this.startMonitoring();
-    this.logger.log('Multi-tenant service initialized');
+    this.logger.log("Multi-tenant service initialized");
   }
 
   private getDefaultMultiTenantConfig(): MultiTenantConfig {
     return {
       enabled: true,
       isolation: {
-        strategy: 'database',
-        databasePrefix: 'telescope_',
-        schemaPrefix: 'tenant_',
+        strategy: "database",
+        databasePrefix: "telescope_",
+        schemaPrefix: "tenant_",
       },
       management: {
         autoProvisioning: true,
@@ -262,19 +261,19 @@ export class MultiTenantService implements OnModuleInit {
 
   private async createDefaultTenant(): Promise<void> {
     const defaultTenant: Tenant = {
-      id: 'default',
-      name: 'Default Tenant',
-      slug: 'default',
-      status: 'active',
-      plan: 'enterprise',
+      id: "default",
+      name: "Default Tenant",
+      slug: "default",
+      status: "active",
+      plan: "enterprise",
       createdAt: new Date(),
       updatedAt: new Date(),
       metadata: {
-        industry: 'technology',
-        size: 'enterprise',
-        region: 'global',
-        timezone: 'UTC',
-        language: 'en',
+        industry: "technology",
+        size: "enterprise",
+        region: "global",
+        timezone: "UTC",
+        language: "en",
       },
       configuration: this.getDefaultConfiguration(),
       limits: this.getDefaultLimits(),
@@ -283,7 +282,7 @@ export class MultiTenantService implements OnModuleInit {
     };
 
     this.tenants.set(defaultTenant.id, defaultTenant);
-    this.logger.log('Default tenant created');
+    this.logger.log("Default tenant created");
   }
 
   private getDefaultConfiguration(): TenantConfiguration {
@@ -301,7 +300,7 @@ export class MultiTenantService implements OnModuleInit {
       settings: {
         dataRetention: 90,
         samplingRate: 100,
-        alertChannels: ['email'],
+        alertChannels: ["email"],
         notificationPreferences: {
           email: true,
           slack: false,
@@ -338,26 +337,26 @@ export class MultiTenantService implements OnModuleInit {
 
   private getDefaultBranding(): TenantBranding {
     return {
-      theme: 'light',
+      theme: "light",
     };
   }
 
   private async initializeTenantIsolation(): Promise<void> {
     this.logger.log(
-      `Initializing tenant isolation with strategy: ${this.config.isolation.strategy}`,
+      `Initializing tenant isolation with strategy: ${this.config.isolation.strategy}`
     );
 
     switch (this.config.isolation.strategy) {
-      case 'database':
+      case "database":
         await this.initializeDatabaseIsolation();
         break;
-      case 'schema':
+      case "schema":
         await this.initializeSchemaIsolation();
         break;
-      case 'row':
+      case "row":
         await this.initializeRowIsolation();
         break;
-      case 'application':
+      case "application":
         await this.initializeApplicationIsolation();
         break;
     }
@@ -365,26 +364,26 @@ export class MultiTenantService implements OnModuleInit {
 
   private async initializeDatabaseIsolation(): Promise<void> {
     // Create separate databases for each tenant
-    this.logger.log('Database isolation initialized');
+    this.logger.log("Database isolation initialized");
   }
 
   private async initializeSchemaIsolation(): Promise<void> {
     // Create separate schemas for each tenant
-    this.logger.log('Schema isolation initialized');
+    this.logger.log("Schema isolation initialized");
   }
 
   private async initializeRowIsolation(): Promise<void> {
     // Implement row-level tenant isolation
-    this.logger.log('Row isolation initialized');
+    this.logger.log("Row isolation initialized");
   }
 
   private async initializeApplicationIsolation(): Promise<void> {
     // Implement application-level tenant isolation
-    this.logger.log('Application isolation initialized');
+    this.logger.log("Application isolation initialized");
   }
 
   private async initializeResourceMonitoring(): Promise<void> {
-    this.logger.log('Resource monitoring initialized');
+    this.logger.log("Resource monitoring initialized");
   }
 
   private startMonitoring(): void {
@@ -400,8 +399,8 @@ export class MultiTenantService implements OnModuleInit {
     name: string;
     slug: string;
     domain?: string;
-    plan: Tenant['plan'];
-    metadata?: Tenant['metadata'];
+    plan: Tenant["plan"];
+    metadata?: Tenant["metadata"];
   }): Promise<TenantProvisioningResult> {
     try {
       this.logger.log(`Provisioning tenant: ${tenantData.name}`);
@@ -410,7 +409,7 @@ export class MultiTenantService implements OnModuleInit {
       if (this.tenants.has(tenantData.slug)) {
         return {
           success: false,
-          error: 'Tenant slug already exists',
+          error: "Tenant slug already exists",
         };
       }
 
@@ -420,7 +419,7 @@ export class MultiTenantService implements OnModuleInit {
         name: tenantData.name,
         slug: tenantData.slug,
         domain: tenantData.domain,
-        status: 'pending',
+        status: "pending",
         plan: tenantData.plan,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -435,7 +434,7 @@ export class MultiTenantService implements OnModuleInit {
       const resources = await this.provisionTenantResources(tenant);
 
       // Activate tenant
-      tenant.status = 'active';
+      tenant.status = "active";
       this.tenants.set(tenant.id, tenant);
       this.tenantSubject.next(tenant);
 
@@ -455,11 +454,11 @@ export class MultiTenantService implements OnModuleInit {
     }
   }
 
-  private getConfigurationForPlan(plan: Tenant['plan']): TenantConfiguration {
+  private getConfigurationForPlan(plan: Tenant["plan"]): TenantConfiguration {
     const baseConfig = this.getDefaultConfiguration();
 
     switch (plan) {
-      case 'free':
+      case "free":
         return {
           ...baseConfig,
           features: {
@@ -473,7 +472,7 @@ export class MultiTenantService implements OnModuleInit {
             samplingRate: 10,
           },
         };
-      case 'basic':
+      case "basic":
         return {
           ...baseConfig,
           features: {
@@ -486,9 +485,9 @@ export class MultiTenantService implements OnModuleInit {
             samplingRate: 50,
           },
         };
-      case 'professional':
+      case "professional":
         return baseConfig;
-      case 'enterprise':
+      case "enterprise":
         return {
           ...baseConfig,
           features: {
@@ -506,11 +505,11 @@ export class MultiTenantService implements OnModuleInit {
     }
   }
 
-  private getLimitsForPlan(plan: Tenant['plan']): TenantLimits {
+  private getLimitsForPlan(plan: Tenant["plan"]): TenantLimits {
     const baseLimits = this.getDefaultLimits();
 
     switch (plan) {
-      case 'free':
+      case "free":
         return {
           ...baseLimits,
           storage: 100, // 100MB
@@ -521,7 +520,7 @@ export class MultiTenantService implements OnModuleInit {
           customFields: 5,
           retentionDays: 30,
         };
-      case 'basic':
+      case "basic":
         return {
           ...baseLimits,
           storage: 512, // 512MB
@@ -532,9 +531,9 @@ export class MultiTenantService implements OnModuleInit {
           customFields: 20,
           retentionDays: 60,
         };
-      case 'professional':
+      case "professional":
         return baseLimits;
-      case 'enterprise':
+      case "enterprise":
         return {
           ...baseLimits,
           storage: 10240, // 10GB
@@ -560,17 +559,23 @@ export class MultiTenantService implements OnModuleInit {
       storage: `storage_${tenant.slug}`,
     };
 
-    if (this.config.isolation.strategy === 'schema') {
-      (resources as any).schema = `${this.config.isolation.schemaPrefix}${tenant.slug}`;
+    if (this.config.isolation.strategy === "schema") {
+      resources.schema = `${this.config.isolation.schemaPrefix}${tenant.slug}`;
     }
 
     // In a real implementation, this would create actual database resources
-    this.logger.log(`Provisioned resources for tenant ${tenant.slug}:`, resources);
+    this.logger.log(
+      `Provisioned resources for tenant ${tenant.slug}:`,
+      resources
+    );
 
     return resources;
   }
 
-  async updateTenant(tenantId: string, updates: Partial<Tenant>): Promise<Tenant | null> {
+  async updateTenant(
+    tenantId: string,
+    updates: Partial<Tenant>
+  ): Promise<Tenant | null> {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) return null;
 
@@ -591,17 +596,19 @@ export class MultiTenantService implements OnModuleInit {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) return false;
 
-    tenant.status = 'suspended';
+    tenant.status = "suspended";
     tenant.updatedAt = new Date();
 
     if (reason) {
-      (tenant.metadata as any).suspensionReason = reason;
+      tenant.metadata.suspensionReason = reason;
     }
 
     this.tenants.set(tenantId, tenant);
     this.tenantSubject.next(tenant);
 
-    this.logger.log(`Tenant suspended: ${tenantId}${reason ? ` - ${reason}` : ''}`);
+    this.logger.log(
+      `Tenant suspended: ${tenantId}${reason ? ` - ${reason}` : ""}`
+    );
     return true;
   }
 
@@ -609,9 +616,9 @@ export class MultiTenantService implements OnModuleInit {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) return false;
 
-    tenant.status = 'active';
+    tenant.status = "active";
     tenant.updatedAt = new Date();
-    delete (tenant.metadata as any).suspensionReason;
+    delete tenant.metadata.suspensionReason;
 
     this.tenants.set(tenantId, tenant);
     this.tenantSubject.next(tenant);
@@ -625,19 +632,16 @@ export class MultiTenantService implements OnModuleInit {
     if (!tenant) return false;
 
     // Mark as deleted (soft delete)
-    tenant.status = 'deleted';
+    tenant.status = "deleted";
     tenant.updatedAt = new Date();
 
     this.tenants.set(tenantId, tenant);
     this.tenantSubject.next(tenant);
 
     // Schedule hard deletion after retention period
-    setTimeout(
-      async () => {
-        await this.hardDeleteTenant(tenantId);
-      },
-      30 * 24 * 60 * 60 * 1000,
-    ); // 30 days
+    setTimeout(async () => {
+      await this.hardDeleteTenant(tenantId);
+    }, 30 * 24 * 60 * 60 * 1000); // 30 days
 
     this.logger.log(`Tenant marked for deletion: ${tenantId}`);
     return true;
@@ -645,7 +649,7 @@ export class MultiTenantService implements OnModuleInit {
 
   private async hardDeleteTenant(tenantId: string): Promise<void> {
     const tenant = this.tenants.get(tenantId);
-    if (!tenant || tenant.status !== 'deleted') return;
+    if (!tenant || tenant.status !== "deleted") return;
 
     // Delete tenant resources
     await this.deleteTenantResources(tenant);
@@ -667,7 +671,7 @@ export class MultiTenantService implements OnModuleInit {
 
   private async monitorTenantResources(): Promise<void> {
     for (const tenant of this.tenants.values()) {
-      if (tenant.status !== 'active') continue;
+      if (tenant.status !== "active") continue;
 
       await this.checkTenantQuotas(tenant);
       await this.updateTenantUsage(tenant);
@@ -679,27 +683,52 @@ export class MultiTenantService implements OnModuleInit {
 
     // Check storage quota
     if (usage.storage > limits.storage) {
-      await this.handleQuotaExceeded(tenant.id, 'storage', usage.storage, limits.storage);
+      await this.handleQuotaExceeded(
+        tenant.id,
+        "storage",
+        usage.storage,
+        limits.storage
+      );
     }
 
     // Check requests quota
     if (usage.requests > limits.requests) {
-      await this.handleQuotaExceeded(tenant.id, 'requests', usage.requests, limits.requests);
+      await this.handleQuotaExceeded(
+        tenant.id,
+        "requests",
+        usage.requests,
+        limits.requests
+      );
     }
 
     // Check users quota
     if (usage.users > limits.users) {
-      await this.handleQuotaExceeded(tenant.id, 'users', usage.users, limits.users);
+      await this.handleQuotaExceeded(
+        tenant.id,
+        "users",
+        usage.users,
+        limits.users
+      );
     }
 
     // Check watchers quota
     if (usage.watchers > limits.watchers) {
-      await this.handleQuotaExceeded(tenant.id, 'watchers', usage.watchers, limits.watchers);
+      await this.handleQuotaExceeded(
+        tenant.id,
+        "watchers",
+        usage.watchers,
+        limits.watchers
+      );
     }
 
     // Check API calls quota
     if (usage.apiCalls > limits.apiCalls) {
-      await this.handleQuotaExceeded(tenant.id, 'apiCalls', usage.apiCalls, limits.apiCalls);
+      await this.handleQuotaExceeded(
+        tenant.id,
+        "apiCalls",
+        usage.apiCalls,
+        limits.apiCalls
+      );
     }
   }
 
@@ -707,7 +736,7 @@ export class MultiTenantService implements OnModuleInit {
     tenantId: string,
     resource: string,
     current: number,
-    limit: number,
+    limit: number
   ): Promise<void> {
     const quotaEvent: TenantQuotaExceeded = {
       tenantId,
@@ -724,16 +753,18 @@ export class MultiTenantService implements OnModuleInit {
     this.quotaExceeded.get(tenantId)!.push(quotaEvent);
     this.quotaSubject.next(quotaEvent);
 
-    this.logger.warn(`Quota exceeded for tenant ${tenantId}: ${resource} (${current}/${limit})`);
+    this.logger.warn(
+      `Quota exceeded for tenant ${tenantId}: ${resource} (${current}/${limit})`
+    );
 
     // Auto-suspend if multiple quotas exceeded
     const exceededQuotas = this.quotaExceeded.get(tenantId) || [];
     const recentExceeded = exceededQuotas.filter(
-      (q) => Date.now() - q.timestamp.getTime() < 24 * 60 * 60 * 1000, // Last 24 hours
+      (q) => Date.now() - q.timestamp.getTime() < 24 * 60 * 60 * 1000 // Last 24 hours
     );
 
     if (recentExceeded.length >= 3) {
-      await this.suspendTenant(tenantId, 'Multiple quota violations');
+      await this.suspendTenant(tenantId, "Multiple quota violations");
     }
   }
 
@@ -745,7 +776,10 @@ export class MultiTenantService implements OnModuleInit {
       users: Math.min(tenant.usage.users, tenant.limits.users),
       watchers: Math.min(tenant.usage.watchers, tenant.limits.watchers),
       apiCalls: Math.floor(Math.random() * tenant.limits.apiCalls * 0.1),
-      customFields: Math.min(tenant.usage.customFields, tenant.limits.customFields),
+      customFields: Math.min(
+        tenant.usage.customFields,
+        tenant.limits.customFields
+      ),
       lastUpdated: new Date(),
     };
 
@@ -790,23 +824,26 @@ export class MultiTenantService implements OnModuleInit {
     };
   } | null> {
     const tenant = this.tenants.get(tenantId);
-    if (!tenant || tenant.status !== 'active') return null;
+    if (!tenant || tenant.status !== "active") return null;
 
     const isolation = {
       database: `${this.config.isolation.databasePrefix}${tenant.slug}`,
       prefix: `${tenant.slug}_`,
     };
 
-    if (this.config.isolation.strategy === 'schema') {
-      (isolation as any).schema = `${this.config.isolation.schemaPrefix}${tenant.slug}`;
+    if (this.config.isolation.strategy === "schema") {
+      isolation.schema = `${this.config.isolation.schemaPrefix}${tenant.slug}`;
     }
 
     return { tenant, isolation };
   }
 
-  async validateTenantAccess(tenantId: string, userId: string): Promise<boolean> {
+  async validateTenantAccess(
+    tenantId: string,
+    userId: string
+  ): Promise<boolean> {
     const tenant = this.tenants.get(tenantId);
-    if (!tenant || tenant.status !== 'active') return false;
+    if (!tenant || tenant.status !== "active") return false;
 
     // In a real implementation, this would check if the user belongs to the tenant
     return true;
@@ -816,7 +853,7 @@ export class MultiTenantService implements OnModuleInit {
 
   async updateTenantBranding(
     tenantId: string,
-    branding: Partial<TenantBranding>,
+    branding: Partial<TenantBranding>
   ): Promise<Tenant | null> {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) return null;
@@ -833,7 +870,7 @@ export class MultiTenantService implements OnModuleInit {
 
   async updateTenantConfiguration(
     tenantId: string,
-    configuration: Partial<TenantConfiguration>,
+    configuration: Partial<TenantConfiguration>
   ): Promise<Tenant | null> {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) return null;
@@ -909,6 +946,6 @@ export class MultiTenantService implements OnModuleInit {
       clearInterval(this.monitoringInterval as any);
     }
 
-    this.logger.log('Multi-tenant service shutdown');
+    this.logger.log("Multi-tenant service shutdown");
   }
 }

@@ -1,2 +1,2 @@
-export * from './week7-analytics.controller';
-export * from './week8-ml-analytics.controller'; 
+export * from './analytics.controller';
+export * from './ml-analytics.controller';

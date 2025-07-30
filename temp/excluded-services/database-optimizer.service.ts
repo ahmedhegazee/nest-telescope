@@ -1,13 +1,13 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Observable, Subject, interval, Subscription } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
-import { TelescopeEntry } from '../interfaces/telescope-entry.interface';
-import { TelescopeConfig } from '../interfaces/telescope-config.interface';
-import { Inject } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Observable, Subject, interval } from "rxjs";
+import { map, filter, debounceTime } from "rxjs/operators";
+import { TelescopeEntry } from "../interfaces/telescope-entry.interface";
+import { TelescopeConfig } from "../interfaces/telescope-config.interface";
+import { Inject } from "@nestjs/common";
 
 export interface DatabaseConfig {
   enabled: boolean;
-  type: 'postgresql' | 'mysql' | 'mongodb' | 'sqlite';
+  type: "postgresql" | "mysql" | "mongodb" | "sqlite";
   connection: {
     host: string;
     port: number;
@@ -52,12 +52,12 @@ export interface IndexSuggestion {
   id: string;
   table: string;
   columns: string[];
-  type: 'btree' | 'hash' | 'gin' | 'gist' | 'brin';
+  type: "btree" | "hash" | "gin" | "gist" | "brin";
   reason: string;
   estimatedImprovement: number; // percentage
   creationCost: number; // estimated time in seconds
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'pending' | 'created' | 'failed' | 'ignored';
+  priority: "low" | "medium" | "high" | "critical";
+  status: "pending" | "created" | "failed" | "ignored";
 }
 
 export interface DatabasePerformance {
@@ -112,39 +112,39 @@ export class DatabaseOptimizerService implements OnModuleInit {
   private readonly performanceSubject = new Subject<DatabasePerformance>();
   private readonly optimizationSubject = new Subject<OptimizationResult>();
   private readonly config: DatabaseConfig;
-  private monitoringInterval: Subscription | null = null;
-  private optimizationInterval: Subscription | null = null;
+  private monitoringInterval: NodeJS.Timeout | null = null;
+  private optimizationInterval: NodeJS.Timeout | null = null;
 
   constructor(
-    @Inject('TELESCOPE_CONFIG')
-    private readonly telescopeConfig: TelescopeConfig,
+    @Inject("TELESCOPE_CONFIG")
+    private readonly telescopeConfig: TelescopeConfig
   ) {
     this.config =
-      (this.telescopeConfig.database as DatabaseConfig) || this.getDefaultDatabaseConfig();
+      this.telescopeConfig.database || this.getDefaultDatabaseConfig();
   }
 
   async onModuleInit(): Promise<void> {
     if (!this.config.enabled) {
-      this.logger.log('Database optimization disabled');
+      this.logger.log("Database optimization disabled");
       return;
     }
 
     await this.initializeOptimizer();
     this.startMonitoring();
     this.startOptimization();
-    this.logger.log('Database optimizer service initialized');
+    this.logger.log("Database optimizer service initialized");
   }
 
   private getDefaultDatabaseConfig(): DatabaseConfig {
     return {
       enabled: true,
-      type: 'postgresql',
+      type: "postgresql",
       connection: {
-        host: 'localhost',
+        host: "localhost",
         port: 5432,
-        database: 'telescope',
-        username: 'telescope_user',
-        password: 'password',
+        database: "telescope",
+        username: "telescope_user",
+        password: "password",
         ssl: false,
         poolSize: 20,
         timeout: 30000,
@@ -176,35 +176,35 @@ export class DatabaseOptimizerService implements OnModuleInit {
   private async initializeConnectionPool(): Promise<void> {
     if (!this.config.optimization.connectionPooling) return;
 
-    this.logger.log('Initializing connection pool');
+    this.logger.log("Initializing connection pool");
     // Implementation would depend on the database driver
   }
 
   private async initializeQueryCache(): Promise<void> {
     if (!this.config.optimization.queryCaching) return;
 
-    this.logger.log('Initializing query cache');
+    this.logger.log("Initializing query cache");
     // Implementation would depend on the database driver
   }
 
   private async analyzeExistingIndexes(): Promise<void> {
-    this.logger.log('Analyzing existing database indexes');
+    this.logger.log("Analyzing existing database indexes");
     // Implementation would analyze current indexes and suggest improvements
   }
 
   private startMonitoring(): void {
     if (!this.config.monitoring.enabled) return;
 
-    this.monitoringInterval = interval(this.config.monitoring.metricsInterval).subscribe(
-      async () => {
-        const performance = await this.getDatabasePerformance();
-        this.performanceSubject.next(performance);
+    this.monitoringInterval = interval(
+      this.config.monitoring.metricsInterval
+    ).subscribe(async () => {
+      const performance = await this.getDatabasePerformance();
+      this.performanceSubject.next(performance);
 
-        if (this.config.monitoring.performanceAlerts) {
-          await this.checkPerformanceAlerts(performance);
-        }
-      },
-    );
+      if (this.config.monitoring.performanceAlerts) {
+        await this.checkPerformanceAlerts(performance);
+      }
+    });
   }
 
   private startOptimization(): void {
@@ -239,7 +239,7 @@ export class DatabaseOptimizerService implements OnModuleInit {
     // Log slow queries if enabled
     if (this.config.monitoring.slowQueryLogging && queryMetrics.slow) {
       this.logger.warn(
-        `Slow query detected: ${queryMetrics.sql} (${queryMetrics.executionTime}ms)`,
+        `Slow query detected: ${queryMetrics.sql} (${queryMetrics.executionTime}ms)`
       );
     }
   }
@@ -250,13 +250,20 @@ export class DatabaseOptimizerService implements OnModuleInit {
     for (const suggestion of suggestions) {
       this.indexSuggestions.set(suggestion.id, suggestion);
 
-      if (suggestion.priority === 'critical' || suggestion.priority === 'high') {
-        this.logger.warn(`High priority index suggestion: ${suggestion.reason}`);
+      if (
+        suggestion.priority === "critical" ||
+        suggestion.priority === "high"
+      ) {
+        this.logger.warn(
+          `High priority index suggestion: ${suggestion.reason}`
+        );
       }
     }
   }
 
-  private async generateIndexSuggestions(queryMetrics: QueryMetrics): Promise<IndexSuggestion[]> {
+  private async generateIndexSuggestions(
+    queryMetrics: QueryMetrics
+  ): Promise<IndexSuggestion[]> {
     const suggestions: IndexSuggestion[] = [];
 
     // Analyze query patterns and suggest indexes
@@ -267,12 +274,25 @@ export class DatabaseOptimizerService implements OnModuleInit {
         id: `idx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         table: queryAnalysis.table,
         columns: queryAnalysis.columns,
-        type: this.determineIndexType(queryAnalysis.columns, queryAnalysis.usage),
-        reason: `Slow query on ${queryAnalysis.table} with ${queryAnalysis.columns.join(', ')}`,
-        estimatedImprovement: this.estimateIndexImprovement(queryMetrics.executionTime),
-        creationCost: this.estimateIndexCreationCost(queryAnalysis.table, queryAnalysis.columns),
-        priority: this.determineIndexPriority(queryMetrics.executionTime, queryAnalysis.usage),
-        status: 'pending',
+        type: this.determineIndexType(
+          queryAnalysis.columns,
+          queryAnalysis.usage
+        ),
+        reason: `Slow query on ${
+          queryAnalysis.table
+        } with ${queryAnalysis.columns.join(", ")}`,
+        estimatedImprovement: this.estimateIndexImprovement(
+          queryMetrics.executionTime
+        ),
+        creationCost: this.estimateIndexCreationCost(
+          queryAnalysis.table,
+          queryAnalysis.columns
+        ),
+        priority: this.determineIndexPriority(
+          queryMetrics.executionTime,
+          queryAnalysis.usage
+        ),
+        status: "pending",
       });
     }
 
@@ -283,34 +303,39 @@ export class DatabaseOptimizerService implements OnModuleInit {
     needsIndex: boolean;
     table: string;
     columns: string[];
-    usage: 'where' | 'join' | 'order' | 'group';
+    usage: "where" | "join" | "order" | "group";
   } {
     // Simple SQL pattern analysis
     // In a real implementation, this would use a proper SQL parser
 
     const lowerSql = sql.toLowerCase();
     const needsIndex =
-      lowerSql.includes('where') || lowerSql.includes('join') || lowerSql.includes('order by');
+      lowerSql.includes("where") ||
+      lowerSql.includes("join") ||
+      lowerSql.includes("order by");
 
     // Extract table and column information
     const tableMatch = lowerSql.match(/from\s+(\w+)/);
-    const table = tableMatch ? tableMatch[1] : 'unknown';
+    const table = tableMatch ? tableMatch[1] : "unknown";
 
     const columnMatch = lowerSql.match(/where\s+(\w+)/);
     const columns = columnMatch ? [columnMatch[1]] : [];
 
-    let usage: 'where' | 'join' | 'order' | 'group' = 'where';
-    if (lowerSql.includes('join')) usage = 'join';
-    else if (lowerSql.includes('order by')) usage = 'order';
-    else if (lowerSql.includes('group by')) usage = 'group';
+    let usage: "where" | "join" | "order" | "group" = "where";
+    if (lowerSql.includes("join")) usage = "join";
+    else if (lowerSql.includes("order by")) usage = "order";
+    else if (lowerSql.includes("group by")) usage = "group";
 
     return { needsIndex, table, columns, usage };
   }
 
-  private determineIndexType(columns: string[], usage: string): IndexSuggestion['type'] {
-    if (columns.length > 1) return 'btree';
-    if (usage === 'join') return 'hash';
-    return 'btree';
+  private determineIndexType(
+    columns: string[],
+    usage: string
+  ): IndexSuggestion["type"] {
+    if (columns.length > 1) return "btree";
+    if (usage === "join") return "hash";
+    return "btree";
   }
 
   private estimateIndexImprovement(currentTime: number): number {
@@ -328,12 +353,12 @@ export class DatabaseOptimizerService implements OnModuleInit {
 
   private determineIndexPriority(
     executionTime: number,
-    usage: string,
-  ): IndexSuggestion['priority'] {
-    if (executionTime > 10000) return 'critical';
-    if (executionTime > 5000) return 'high';
-    if (executionTime > 1000) return 'medium';
-    return 'low';
+    usage: string
+  ): IndexSuggestion["priority"] {
+    if (executionTime > 10000) return "critical";
+    if (executionTime > 5000) return "high";
+    if (executionTime > 1000) return "medium";
+    return "low";
   }
 
   // Performance monitoring
@@ -354,7 +379,9 @@ export class DatabaseOptimizerService implements OnModuleInit {
     };
   }
 
-  private async getConnectionMetrics(): Promise<DatabasePerformance['connections']> {
+  private async getConnectionMetrics(): Promise<
+    DatabasePerformance["connections"]
+  > {
     // Implementation would query database for connection information
     return {
       active: 5,
@@ -364,10 +391,10 @@ export class DatabaseOptimizerService implements OnModuleInit {
     };
   }
 
-  private async getQueryMetrics(): Promise<DatabasePerformance['queries']> {
+  private async getQueryMetrics(): Promise<DatabasePerformance["queries"]> {
     const allQueries = Array.from(this.queryMetrics.values()).flat();
     const recentQueries = allQueries.filter(
-      (q) => Date.now() - q.timestamp.getTime() < 60000, // Last minute
+      (q) => Date.now() - q.timestamp.getTime() < 60000 // Last minute
     );
 
     const slowQueries = recentQueries.filter((q) => q.slow);
@@ -378,14 +405,15 @@ export class DatabaseOptimizerService implements OnModuleInit {
       slow: slowQueries.length,
       averageTime:
         executionTimes.length > 0
-          ? executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length
+          ? executionTimes.reduce((sum, time) => sum + time, 0) /
+            executionTimes.length
           : 0,
       peakTime: executionTimes.length > 0 ? Math.max(...executionTimes) : 0,
       throughput: recentQueries.length, // queries per minute
     };
   }
 
-  private async getStorageMetrics(): Promise<DatabasePerformance['storage']> {
+  private async getStorageMetrics(): Promise<DatabasePerformance["storage"]> {
     // Implementation would query database for storage information
     return {
       size: 1024 * 1024 * 1024, // 1GB
@@ -394,7 +422,7 @@ export class DatabaseOptimizerService implements OnModuleInit {
     };
   }
 
-  private async getCacheMetrics(): Promise<DatabasePerformance['cache']> {
+  private async getCacheMetrics(): Promise<DatabasePerformance["cache"]> {
     // Implementation would query database for cache information
     return {
       hitRate: 0.85, // 85%
@@ -403,7 +431,7 @@ export class DatabaseOptimizerService implements OnModuleInit {
     };
   }
 
-  private async getLockMetrics(): Promise<DatabasePerformance['locks']> {
+  private async getLockMetrics(): Promise<DatabasePerformance["locks"]> {
     // Implementation would query database for lock information
     return {
       active: 2,
@@ -412,25 +440,35 @@ export class DatabaseOptimizerService implements OnModuleInit {
     };
   }
 
-  private async checkPerformanceAlerts(performance: DatabasePerformance): Promise<void> {
+  private async checkPerformanceAlerts(
+    performance: DatabasePerformance
+  ): Promise<void> {
     // Check connection pool utilization
     if (performance.connections.utilization > 80) {
-      this.logger.warn(`High connection pool utilization: ${performance.connections.utilization}%`);
+      this.logger.warn(
+        `High connection pool utilization: ${performance.connections.utilization}%`
+      );
     }
 
     // Check slow query rate
     const slowQueryRate =
-      performance.queries.total > 0 ? performance.queries.slow / performance.queries.total : 0;
+      performance.queries.total > 0
+        ? performance.queries.slow / performance.queries.total
+        : 0;
 
     if (slowQueryRate > 0.1) {
       // More than 10% slow queries
-      this.logger.warn(`High slow query rate: ${(slowQueryRate * 100).toFixed(1)}%`);
+      this.logger.warn(
+        `High slow query rate: ${(slowQueryRate * 100).toFixed(1)}%`
+      );
     }
 
     // Check cache hit rate
     if (performance.cache.hitRate < 0.8) {
       // Less than 80% cache hit rate
-      this.logger.warn(`Low cache hit rate: ${(performance.cache.hitRate * 100).toFixed(1)}%`);
+      this.logger.warn(
+        `Low cache hit rate: ${(performance.cache.hitRate * 100).toFixed(1)}%`
+      );
     }
 
     // Check for deadlocks
@@ -442,14 +480,14 @@ export class DatabaseOptimizerService implements OnModuleInit {
   // Optimization methods
 
   private async runOptimizationCycle(): Promise<void> {
-    this.logger.log('Starting database optimization cycle');
+    this.logger.log("Starting database optimization cycle");
 
     try {
       // Analyze query patterns
       await this.analyzeQueryPatterns();
 
       // Generate index suggestions
-      await this.processIndexSuggestions();
+      await this.generateIndexSuggestions();
 
       // Optimize slow queries
       await this.optimizeSlowQueries();
@@ -460,7 +498,7 @@ export class DatabaseOptimizerService implements OnModuleInit {
       // Update statistics
       await this.updateStatistics();
 
-      this.logger.log('Database optimization cycle completed');
+      this.logger.log("Database optimization cycle completed");
     } catch (error) {
       this.logger.error(`Database optimization cycle failed: ${error.message}`);
     }
@@ -471,7 +509,8 @@ export class DatabaseOptimizerService implements OnModuleInit {
     for (const [queryHash, queries] of this.queryMetrics.entries()) {
       if (queries.length < 10) continue; // Skip queries with few executions
 
-      const avgTime = queries.reduce((sum, q) => sum + q.executionTime, 0) / queries.length;
+      const avgTime =
+        queries.reduce((sum, q) => sum + q.executionTime, 0) / queries.length;
       const slowCount = queries.filter((q) => q.slow).length;
       const slowRate = slowCount / queries.length;
 
@@ -482,10 +521,10 @@ export class DatabaseOptimizerService implements OnModuleInit {
     }
   }
 
-  private async processIndexSuggestions(): Promise<void> {
+  private async generateIndexSuggestions(): Promise<void> {
     // Generate index suggestions based on query patterns
     const suggestions = Array.from(this.indexSuggestions.values())
-      .filter((s) => s.status === 'pending')
+      .filter((s) => s.status === "pending")
       .sort((a, b) => {
         const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
         return priorityOrder[b.priority] - priorityOrder[a.priority];
@@ -499,17 +538,21 @@ export class DatabaseOptimizerService implements OnModuleInit {
 
   private async createIndex(suggestion: IndexSuggestion): Promise<void> {
     try {
-      this.logger.log(`Creating index: ${suggestion.table} (${suggestion.columns.join(', ')})`);
+      this.logger.log(
+        `Creating index: ${suggestion.table} (${suggestion.columns.join(", ")})`
+      );
 
       // Implementation would create the actual index
       const startTime = Date.now();
 
       // Simulate index creation
-      await new Promise((resolve) => setTimeout(resolve, suggestion.creationCost * 1000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, suggestion.creationCost * 1000)
+      );
 
       const duration = Date.now() - startTime;
 
-      suggestion.status = 'created';
+      suggestion.status = "created";
 
       const result: OptimizationResult = {
         success: true,
@@ -528,8 +571,10 @@ export class DatabaseOptimizerService implements OnModuleInit {
 
       this.optimizationSubject.next(result);
     } catch (error) {
-      suggestion.status = 'failed';
-      this.logger.error(`Failed to create index ${suggestion.id}: ${error.message}`);
+      suggestion.status = "failed";
+      this.logger.error(
+        `Failed to create index ${suggestion.id}: ${error.message}`
+      );
 
       const result: OptimizationResult = {
         success: false,
@@ -564,14 +609,24 @@ export class DatabaseOptimizerService implements OnModuleInit {
       const optimization = await this.analyzeQueryOptimization(query.sql);
 
       if (optimization.canOptimize) {
-        const optimizedSql = this.generateOptimizedQuery(query.sql, optimization);
+        const optimizedSql = this.generateOptimizedQuery(
+          query.sql,
+          optimization
+        );
 
         // Test the optimized query
-        const improvement = await this.testQueryOptimization(query.sql, optimizedSql);
+        const improvement = await this.testQueryOptimization(
+          query.sql,
+          optimizedSql
+        );
 
         if (improvement > 20) {
           // More than 20% improvement
-          this.logger.log(`Query optimization successful: ${improvement.toFixed(1)}% improvement`);
+          this.logger.log(
+            `Query optimization successful: ${improvement.toFixed(
+              1
+            )}% improvement`
+          );
         }
       }
     } catch (error) {
@@ -589,43 +644,60 @@ export class DatabaseOptimizerService implements OnModuleInit {
 
     const lowerSql = sql.toLowerCase();
 
-    if (lowerSql.includes('select *')) {
-      suggestions.push('Replace SELECT * with specific columns');
+    if (lowerSql.includes("select *")) {
+      suggestions.push("Replace SELECT * with specific columns");
       canOptimize = true;
     }
 
-    if (lowerSql.includes('order by') && !lowerSql.includes('limit')) {
-      suggestions.push('Add LIMIT clause to ORDER BY queries');
+    if (lowerSql.includes("order by") && !lowerSql.includes("limit")) {
+      suggestions.push("Add LIMIT clause to ORDER BY queries");
       canOptimize = true;
     }
 
-    if (lowerSql.includes('like') && lowerSql.includes('%')) {
-      suggestions.push('Consider using full-text search instead of LIKE with wildcards');
+    if (lowerSql.includes("like") && lowerSql.includes("%")) {
+      suggestions.push(
+        "Consider using full-text search instead of LIKE with wildcards"
+      );
       canOptimize = true;
     }
 
     return { canOptimize, suggestions };
   }
 
-  private generateOptimizedQuery(originalSql: string, optimization: any): string {
+  private generateOptimizedQuery(
+    originalSql: string,
+    optimization: any
+  ): string {
     // Generate optimized SQL based on analysis
     let optimizedSql = originalSql;
 
-    if (optimization.suggestions.includes('Replace SELECT * with specific columns')) {
+    if (
+      optimization.suggestions.includes(
+        "Replace SELECT * with specific columns"
+      )
+    ) {
       // This would require knowledge of the table schema
-      optimizedSql = optimizedSql.replace(/select \*/i, 'SELECT id, name, created_at');
+      optimizedSql = optimizedSql.replace(
+        /select \*/i,
+        "SELECT id, name, created_at"
+      );
     }
 
-    if (optimization.suggestions.includes('Add LIMIT clause to ORDER BY queries')) {
-      if (!optimizedSql.toLowerCase().includes('limit')) {
-        optimizedSql += ' LIMIT 1000';
+    if (
+      optimization.suggestions.includes("Add LIMIT clause to ORDER BY queries")
+    ) {
+      if (!optimizedSql.toLowerCase().includes("limit")) {
+        optimizedSql += " LIMIT 1000";
       }
     }
 
     return optimizedSql;
   }
 
-  private async testQueryOptimization(originalSql: string, optimizedSql: string): Promise<number> {
+  private async testQueryOptimization(
+    originalSql: string,
+    optimizedSql: string
+  ): Promise<number> {
     // Test query optimization by comparing execution times
     // This would require actual database execution
     return 25; // Simulated 25% improvement
@@ -636,7 +708,9 @@ export class DatabaseOptimizerService implements OnModuleInit {
     const cutoffTime = Date.now() - 7 * 24 * 60 * 60 * 1000; // 7 days ago
 
     for (const [queryHash, queries] of this.queryMetrics.entries()) {
-      const recentQueries = queries.filter((q) => q.timestamp.getTime() > cutoffTime);
+      const recentQueries = queries.filter(
+        (q) => q.timestamp.getTime() > cutoffTime
+      );
       if (recentQueries.length === 0) {
         this.queryMetrics.delete(queryHash);
       } else {
@@ -644,12 +718,12 @@ export class DatabaseOptimizerService implements OnModuleInit {
       }
     }
 
-    this.logger.log('Cleaned up old query metrics');
+    this.logger.log("Cleaned up old query metrics");
   }
 
   private async updateStatistics(): Promise<void> {
     // Update database statistics for better query planning
-    this.logger.log('Updating database statistics');
+    this.logger.log("Updating database statistics");
     // Implementation would update database statistics
   }
 
@@ -668,12 +742,12 @@ export class DatabaseOptimizerService implements OnModuleInit {
   }
 
   async createIndexManually(
-    suggestion: Omit<IndexSuggestion, 'id' | 'status'>,
+    suggestion: Omit<IndexSuggestion, "id" | "status">
   ): Promise<OptimizationResult> {
     const fullSuggestion: IndexSuggestion = {
       ...suggestion,
       id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      status: 'pending',
+      status: "pending",
     };
 
     this.indexSuggestions.set(fullSuggestion.id, fullSuggestion);
@@ -702,14 +776,15 @@ export class DatabaseOptimizerService implements OnModuleInit {
       averageTime: number;
       slowExecutions: number;
       slowRate: number;
-      trend: 'improving' | 'degrading' | 'stable';
+      trend: "improving" | "degrading" | "stable";
     };
   } | null> {
     const queries = this.queryMetrics.get(queryHash);
     if (!queries || queries.length === 0) return null;
 
     const totalExecutions = queries.length;
-    const averageTime = queries.reduce((sum, q) => sum + q.executionTime, 0) / totalExecutions;
+    const averageTime =
+      queries.reduce((sum, q) => sum + q.executionTime, 0) / totalExecutions;
     const slowExecutions = queries.filter((q) => q.slow).length;
     const slowRate = slowExecutions / totalExecutions;
 
@@ -718,13 +793,15 @@ export class DatabaseOptimizerService implements OnModuleInit {
     const olderQueries = queries.slice(-20, -10);
 
     const recentAvg =
-      recentQueries.reduce((sum, q) => sum + q.executionTime, 0) / recentQueries.length;
+      recentQueries.reduce((sum, q) => sum + q.executionTime, 0) /
+      recentQueries.length;
     const olderAvg =
-      olderQueries.reduce((sum, q) => sum + q.executionTime, 0) / olderQueries.length;
+      olderQueries.reduce((sum, q) => sum + q.executionTime, 0) /
+      olderQueries.length;
 
-    let trend: 'improving' | 'degrading' | 'stable' = 'stable';
-    if (recentAvg < olderAvg * 0.8) trend = 'improving';
-    else if (recentAvg > olderAvg * 1.2) trend = 'degrading';
+    let trend: "improving" | "degrading" | "stable" = "stable";
+    if (recentAvg < olderAvg * 0.8) trend = "improving";
+    else if (recentAvg > olderAvg * 1.2) trend = "degrading";
 
     return {
       metrics: queries,
@@ -746,6 +823,6 @@ export class DatabaseOptimizerService implements OnModuleInit {
       clearInterval(this.optimizationInterval as any);
     }
 
-    this.logger.log('Database optimizer service shutdown');
+    this.logger.log("Database optimizer service shutdown");
   }
 }

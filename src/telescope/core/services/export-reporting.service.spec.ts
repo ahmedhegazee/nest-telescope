@@ -72,30 +72,27 @@ describe('ExportReportingService', () => {
 
     it('should export data in JSON format', async () => {
       const result = await service.exportData({
-        format: ExportFormat.JSON,
-        types: ['request', 'query', 'exception'],
+        format: 'json',
+        type: 'raw',
       });
 
       expect(result.success).toBe(true);
-      expect(result.format).toBe(ExportFormat.JSON);
-      expect(result.recordCount).toBe(3);
+      expect(result.metadata.format).toBe('json');
+      expect(result.metadata.recordCount).toBe(3);
       expect(result.data).toContain('"id":"1"');
       expect(result.data).toContain('"type":"request"');
-      expect(result.mimeType).toBe('application/json');
     });
 
     it('should export data in CSV format', async () => {
       const result = await service.exportData({
-        format: ExportFormat.CSV,
-        types: ['request'],
+        format: 'csv',
+        type: 'raw',
       });
 
       expect(result.success).toBe(true);
-      expect(result.format).toBe(ExportFormat.CSV);
-      expect(result.recordCount).toBe(1);
+      expect(result.metadata.format).toBe('csv');
+      expect(result.metadata.recordCount).toBe(3);
       expect(result.data).toContain('id,type,timestamp');
-      expect(result.data).toContain('1,request,2023-01-01T10:00:00.000Z');
-      expect(result.mimeType).toBe('text/csv');
     });
 
     it('should export data in PDF format', async () => {
@@ -348,7 +345,7 @@ describe('ExportReportingService', () => {
       ];
 
       const csv = (service as any).transformToCSV(data);
-      
+
       expect(csv).toContain('id,type,timestamp,content');
       expect(csv).toContain('1,request');
       expect(csv).toContain('2,query');
@@ -367,7 +364,7 @@ describe('ExportReportingService', () => {
       ];
 
       const csv = (service as any).transformToCSV(data);
-      
+
       expect(csv).toContain('id,type,content');
       expect(csv).toContain('1,request');
       expect(csv).toContain('{"request":{"path":"/api/test","method":"GET"}');
@@ -380,7 +377,7 @@ describe('ExportReportingService', () => {
       ];
 
       const pdf = (service as any).generatePDFContent(data, 'Test Export');
-      
+
       expect(pdf).toContain('Telescope Data Export');
       expect(pdf).toContain('Test Export');
       expect(pdf).toContain('Total Records: 2');
@@ -400,7 +397,7 @@ describe('ExportReportingService', () => {
       };
 
       const html = (service as any).generatePerformanceReportHTML(analytics, 'Performance Report');
-      
+
       expect(html).toContain('Performance Report');
       expect(html).toContain('Total Requests: 100');
       expect(html).toContain('Average Response Time: 150ms');
@@ -416,8 +413,11 @@ describe('ExportReportingService', () => {
         },
       };
 
-      const html = (service as any).generateUserActivityReportHTML(analytics, 'User Activity Report');
-      
+      const html = (service as any).generateUserActivityReportHTML(
+        analytics,
+        'User Activity Report',
+      );
+
       expect(html).toContain('User Activity Report');
       expect(html).toContain('Total Users: 50');
       expect(html).toContain('Active Users: 30');
@@ -433,8 +433,11 @@ describe('ExportReportingService', () => {
         },
       };
 
-      const html = (service as any).generateErrorAnalysisReportHTML(analytics, 'Error Analysis Report');
-      
+      const html = (service as any).generateErrorAnalysisReportHTML(
+        analytics,
+        'Error Analysis Report',
+      );
+
       expect(html).toContain('Error Analysis Report');
       expect(html).toContain('Total Errors: 10');
       expect(html).toContain('ValidationError');

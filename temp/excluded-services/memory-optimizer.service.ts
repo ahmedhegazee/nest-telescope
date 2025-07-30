@@ -1,8 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Observable, Subject, interval, Subscription } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
-import { TelescopeConfig } from '../interfaces/telescope-config.interface';
-import { Inject } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Observable, Subject, interval } from "rxjs";
+import { map, filter, debounceTime } from "rxjs/operators";
+import { TelescopeConfig } from "../interfaces/telescope-config.interface";
+import { Inject } from "@nestjs/common";
 
 export interface MemoryConfig {
   enabled: boolean;
@@ -51,19 +51,19 @@ export interface MemoryMetrics {
 
 export interface MemoryLeak {
   id: string;
-  type: 'object' | 'array' | 'function' | 'closure' | 'event' | 'heap' | 'external';
+  type: "object" | "array" | "function" | "closure" | "event";
   location: string;
   size: number; // bytes
   growth: number; // bytes per minute
   firstDetected: Date;
   lastSeen: Date;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'active' | 'resolved' | 'investigating';
+  severity: "low" | "medium" | "high" | "critical";
+  status: "active" | "resolved" | "investigating";
   stackTrace?: string;
 }
 
 export interface MemoryOptimization {
-  type: 'gc' | 'compression' | 'cleanup' | 'pooling';
+  type: "gc" | "compression" | "cleanup" | "pooling";
   timestamp: Date;
   duration: number;
   freedMemory: number; // bytes
@@ -73,7 +73,7 @@ export interface MemoryOptimization {
 }
 
 export interface MemoryHealth {
-  status: 'healthy' | 'warning' | 'critical';
+  status: "healthy" | "warning" | "critical";
   score: number; // 0-100
   issues: string[];
   recommendations: string[];
@@ -91,22 +91,21 @@ export class MemoryOptimizerService implements OnModuleInit {
   private readonly leakSubject = new Subject<MemoryLeak>();
   private readonly optimizationSubject = new Subject<MemoryOptimization>();
   private readonly config: MemoryConfig;
-  private monitoringInterval: Subscription | null = null;
-  private optimizationInterval: Subscription | null = null;
+  private monitoringInterval: NodeJS.Timeout | null = null;
+  private optimizationInterval: NodeJS.Timeout | null = null;
   private gcCount = 0;
   private lastGcTime = 0;
 
   constructor(
-    @Inject('TELESCOPE_CONFIG')
-    private readonly telescopeConfig: TelescopeConfig,
+    @Inject("TELESCOPE_CONFIG")
+    private readonly telescopeConfig: TelescopeConfig
   ) {
-    this.config =
-      (this.telescopeConfig.memory as unknown as MemoryConfig) || this.getDefaultMemoryConfig();
+    this.config = this.telescopeConfig.memory || this.getDefaultMemoryConfig();
   }
 
   async onModuleInit(): Promise<void> {
     if (!this.config.enabled) {
-      this.logger.log('Memory optimization disabled');
+      this.logger.log("Memory optimization disabled");
       return;
     }
 
@@ -114,7 +113,7 @@ export class MemoryOptimizerService implements OnModuleInit {
     this.startMonitoring();
     this.startOptimization();
     this.setupGcMonitoring();
-    this.logger.log('Memory optimizer service initialized');
+    this.logger.log("Memory optimizer service initialized");
   }
 
   private getDefaultMemoryConfig(): MemoryConfig {
@@ -162,19 +161,21 @@ export class MemoryOptimizerService implements OnModuleInit {
   }
 
   private async initializeMemoryPools(): Promise<void> {
-    this.logger.log('Initializing memory pools');
+    this.logger.log("Initializing memory pools");
     // Implementation would create memory pools for frequently allocated objects
   }
 
   private async initializeLeakDetection(): Promise<void> {
-    this.logger.log('Initializing memory leak detection');
+    this.logger.log("Initializing memory leak detection");
     // Implementation would set up heap snapshots and monitoring
   }
 
   private startMonitoring(): void {
     if (!this.config.monitoring.enabled) return;
 
-    this.monitoringInterval = interval(this.config.monitoring.interval).subscribe(async () => {
+    this.monitoringInterval = interval(
+      this.config.monitoring.interval
+    ).subscribe(async () => {
       const metrics = this.getCurrentMemoryMetrics();
       this.memoryHistory.push(metrics);
       this.metricsSubject.next(metrics);
@@ -203,7 +204,7 @@ export class MemoryOptimizerService implements OnModuleInit {
 
   private setupGcMonitoring(): void {
     // Monitor garbage collection events
-    if (typeof global.gc === 'function') {
+    if (typeof global.gc === "function") {
       const originalGc = global.gc;
       global.gc = (...args: any[]) => {
         const startTime = Date.now();
@@ -242,11 +243,11 @@ export class MemoryOptimizerService implements OnModuleInit {
     };
   }
 
-  private getGcStats(): MemoryMetrics['gc'] {
+  private getGcStats(): MemoryMetrics["gc"] {
     return {
       count: this.gcCount,
       duration: Date.now() - this.lastGcTime,
-      type: 'mark-and-sweep', // Simplified
+      type: "mark-and-sweep", // Simplified
     };
   }
 
@@ -274,39 +275,47 @@ export class MemoryOptimizerService implements OnModuleInit {
     let score = 100;
 
     // Check heap usage
-    if (metrics.heapUsedPercentage > this.config.monitoring.threshold.heapUsed) {
+    if (
+      metrics.heapUsedPercentage > this.config.monitoring.threshold.heapUsed
+    ) {
       issues.push(`High heap usage: ${metrics.heapUsedPercentage.toFixed(1)}%`);
       score -= 20;
-      recommendations.push('Consider garbage collection or memory cleanup');
+      recommendations.push("Consider garbage collection or memory cleanup");
     }
 
     // Check external memory
-    if (metrics.externalPercentage > this.config.monitoring.threshold.external) {
-      issues.push(`High external memory usage: ${metrics.externalPercentage.toFixed(1)}%`);
+    if (
+      metrics.externalPercentage > this.config.monitoring.threshold.external
+    ) {
+      issues.push(
+        `High external memory usage: ${metrics.externalPercentage.toFixed(1)}%`
+      );
       score -= 15;
-      recommendations.push('Check for memory leaks in external dependencies');
+      recommendations.push("Check for memory leaks in external dependencies");
     }
 
     // Check RSS
     if (metrics.rssPercentage > this.config.monitoring.threshold.rss) {
       issues.push(`High RSS usage: ${metrics.rssPercentage.toFixed(1)}%`);
       score -= 10;
-      recommendations.push('Consider process restart or memory optimization');
+      recommendations.push("Consider process restart or memory optimization");
     }
 
     // Check for memory growth trend
     const growthTrend = this.calculateMemoryGrowthTrend();
     if (growthTrend > 10) {
       // More than 10% growth per minute
-      issues.push(`Memory growing rapidly: ${growthTrend.toFixed(1)}% per minute`);
+      issues.push(
+        `Memory growing rapidly: ${growthTrend.toFixed(1)}% per minute`
+      );
       score -= 25;
-      recommendations.push('Investigate for memory leaks');
+      recommendations.push("Investigate for memory leaks");
     }
 
     // Determine status
-    let status: MemoryHealth['status'] = 'healthy';
-    if (score < 50) status = 'critical';
-    else if (score < 75) status = 'warning';
+    let status: MemoryHealth["status"] = "healthy";
+    if (score < 50) status = "critical";
+    else if (score < 75) status = "warning";
 
     return {
       status,
@@ -323,8 +332,10 @@ export class MemoryOptimizerService implements OnModuleInit {
     const recent = this.memoryHistory.slice(-5);
     const older = this.memoryHistory.slice(-10, -5);
 
-    const recentAvg = recent.reduce((sum, m) => sum + m.heapUsed, 0) / recent.length;
-    const olderAvg = older.reduce((sum, m) => sum + m.heapUsed, 0) / older.length;
+    const recentAvg =
+      recent.reduce((sum, m) => sum + m.heapUsed, 0) / recent.length;
+    const olderAvg =
+      older.reduce((sum, m) => sum + m.heapUsed, 0) / older.length;
 
     if (olderAvg === 0) return 0;
 
@@ -333,9 +344,15 @@ export class MemoryOptimizerService implements OnModuleInit {
 
   private async checkMemoryAlerts(metrics: MemoryMetrics): Promise<void> {
     if (metrics.heapUsedPercentage > this.config.alerts.criticalThreshold) {
-      this.logger.error(`CRITICAL: Memory usage at ${metrics.heapUsedPercentage.toFixed(1)}%`);
-    } else if (metrics.heapUsedPercentage > this.config.alerts.warningThreshold) {
-      this.logger.warn(`WARNING: Memory usage at ${metrics.heapUsedPercentage.toFixed(1)}%`);
+      this.logger.error(
+        `CRITICAL: Memory usage at ${metrics.heapUsedPercentage.toFixed(1)}%`
+      );
+    } else if (
+      metrics.heapUsedPercentage > this.config.alerts.warningThreshold
+    ) {
+      this.logger.warn(
+        `WARNING: Memory usage at ${metrics.heapUsedPercentage.toFixed(1)}%`
+      );
     }
   }
 
@@ -369,19 +386,21 @@ export class MemoryOptimizerService implements OnModuleInit {
       const current = this.memoryHistory[this.memoryHistory.length - 1];
       const previous = this.memoryHistory[this.memoryHistory.length - 2];
 
-      const heapGrowth = ((current.heapUsed - previous.heapUsed) / previous.heapUsed) * 100;
+      const heapGrowth =
+        ((current.heapUsed - previous.heapUsed) / previous.heapUsed) * 100;
       if (heapGrowth > 0) {
         patterns.push({
-          type: 'heap',
+          type: "heap",
           growthRate: heapGrowth,
           size: current.heapUsed,
         });
       }
 
-      const externalGrowth = ((current.external - previous.external) / previous.external) * 100;
+      const externalGrowth =
+        ((current.external - previous.external) / previous.external) * 100;
       if (externalGrowth > 0) {
         patterns.push({
-          type: 'external',
+          type: "external",
           growthRate: externalGrowth,
           size: current.external,
         });
@@ -400,7 +419,7 @@ export class MemoryOptimizerService implements OnModuleInit {
 
     // Check if this leak is already being tracked
     const existingLeak = Array.from(this.memoryLeaks.values()).find(
-      (leak) => leak.type === pattern.type && leak.status === 'active',
+      (leak) => leak.type === pattern.type && leak.status === "active"
     );
 
     if (existingLeak) {
@@ -410,9 +429,9 @@ export class MemoryOptimizerService implements OnModuleInit {
       existingLeak.lastSeen = new Date();
 
       if (pattern.growthRate > 20) {
-        existingLeak.severity = 'critical';
+        existingLeak.severity = "critical";
       } else if (pattern.growthRate > 10) {
-        existingLeak.severity = 'high';
+        existingLeak.severity = "high";
       }
 
       this.leakSubject.next(existingLeak);
@@ -421,14 +440,18 @@ export class MemoryOptimizerService implements OnModuleInit {
       const leak: MemoryLeak = {
         id: leakId,
         type: pattern.type as any,
-        location: 'unknown',
+        location: "unknown",
         size: pattern.size,
         growth: pattern.growthRate,
         firstDetected: new Date(),
         lastSeen: new Date(),
         severity:
-          pattern.growthRate > 20 ? 'critical' : pattern.growthRate > 10 ? 'high' : 'medium',
-        status: 'active',
+          pattern.growthRate > 20
+            ? "critical"
+            : pattern.growthRate > 10
+            ? "high"
+            : "medium",
+        status: "active",
       };
 
       this.memoryLeaks.set(leakId, leak);
@@ -437,7 +460,7 @@ export class MemoryOptimizerService implements OnModuleInit {
       this.logger.warn(
         `Potential memory leak detected: ${
           pattern.type
-        } growing at ${pattern.growthRate.toFixed(1)}% per interval`,
+        } growing at ${pattern.growthRate.toFixed(1)}% per interval`
       );
     }
   }
@@ -445,7 +468,7 @@ export class MemoryOptimizerService implements OnModuleInit {
   // Memory optimization
 
   private async runOptimizationCycle(): Promise<void> {
-    this.logger.log('Starting memory optimization cycle');
+    this.logger.log("Starting memory optimization cycle");
 
     try {
       // Run garbage collection if needed
@@ -466,7 +489,7 @@ export class MemoryOptimizerService implements OnModuleInit {
       // Resolve memory leaks
       await this.resolveMemoryLeaks();
 
-      this.logger.log('Memory optimization cycle completed');
+      this.logger.log("Memory optimization cycle completed");
     } catch (error) {
       this.logger.error(`Memory optimization cycle failed: ${error.message}`);
     }
@@ -476,17 +499,19 @@ export class MemoryOptimizerService implements OnModuleInit {
     if (!this.config.optimization.autoGc) return false;
 
     const currentMetrics = this.getCurrentMemoryMetrics();
-    return currentMetrics.heapUsedPercentage > this.config.optimization.gcThreshold;
+    return (
+      currentMetrics.heapUsedPercentage > this.config.optimization.gcThreshold
+    );
   }
 
   private async triggerGarbageCollection(): Promise<void> {
     try {
-      this.logger.log('Triggering garbage collection');
+      this.logger.log("Triggering garbage collection");
 
       const beforeMetrics = this.getCurrentMemoryMetrics();
       const startTime = Date.now();
 
-      if (typeof global.gc === 'function') {
+      if (typeof global.gc === "function") {
         global.gc();
       } else {
         // Fallback: try to trigger GC by creating pressure
@@ -497,10 +522,12 @@ export class MemoryOptimizerService implements OnModuleInit {
       const afterMetrics = this.getCurrentMemoryMetrics();
       const freedMemory = beforeMetrics.heapUsed - afterMetrics.heapUsed;
       const improvement =
-        beforeMetrics.heapUsed > 0 ? (freedMemory / beforeMetrics.heapUsed) * 100 : 0;
+        beforeMetrics.heapUsed > 0
+          ? (freedMemory / beforeMetrics.heapUsed) * 100
+          : 0;
 
       const optimization: MemoryOptimization = {
-        type: 'gc',
+        type: "gc",
         timestamp: new Date(),
         duration,
         freedMemory,
@@ -513,14 +540,14 @@ export class MemoryOptimizerService implements OnModuleInit {
 
       this.logger.log(
         `Garbage collection completed: freed ${this.formatBytes(
-          freedMemory,
-        )} (${improvement.toFixed(1)}% improvement)`,
+          freedMemory
+        )} (${improvement.toFixed(1)}% improvement)`
       );
     } catch (error) {
       this.logger.error(`Garbage collection failed: ${error.message}`);
 
       const optimization: MemoryOptimization = {
-        type: 'gc',
+        type: "gc",
         timestamp: new Date(),
         duration: 0,
         freedMemory: 0,
@@ -538,7 +565,7 @@ export class MemoryOptimizerService implements OnModuleInit {
     // Create memory pressure to potentially trigger GC
     const pressure = [];
     for (let i = 0; i < 1000; i++) {
-      pressure.push(new Array(1000).fill('pressure'));
+      pressure.push(new Array(1000).fill("pressure"));
     }
     // Clear the pressure array
     pressure.length = 0;
@@ -546,7 +573,7 @@ export class MemoryOptimizerService implements OnModuleInit {
 
   private async compressMemory(): Promise<void> {
     try {
-      this.logger.log('Compressing memory');
+      this.logger.log("Compressing memory");
 
       const beforeMetrics = this.getCurrentMemoryMetrics();
       const startTime = Date.now();
@@ -558,10 +585,12 @@ export class MemoryOptimizerService implements OnModuleInit {
       const afterMetrics = this.getCurrentMemoryMetrics();
       const freedMemory = beforeMetrics.heapUsed - afterMetrics.heapUsed;
       const improvement =
-        beforeMetrics.heapUsed > 0 ? (freedMemory / beforeMetrics.heapUsed) * 100 : 0;
+        beforeMetrics.heapUsed > 0
+          ? (freedMemory / beforeMetrics.heapUsed) * 100
+          : 0;
 
       const optimization: MemoryOptimization = {
-        type: 'compression',
+        type: "compression",
         timestamp: new Date(),
         duration,
         freedMemory,
@@ -575,7 +604,7 @@ export class MemoryOptimizerService implements OnModuleInit {
       this.logger.error(`Memory compression failed: ${error.message}`);
 
       const optimization: MemoryOptimization = {
-        type: 'compression',
+        type: "compression",
         timestamp: new Date(),
         duration: 0,
         freedMemory: 0,
@@ -600,7 +629,7 @@ export class MemoryOptimizerService implements OnModuleInit {
 
   private async cleanupMemoryPools(): Promise<void> {
     try {
-      this.logger.log('Cleaning up memory pools');
+      this.logger.log("Cleaning up memory pools");
 
       const beforeMetrics = this.getCurrentMemoryMetrics();
       const startTime = Date.now();
@@ -612,10 +641,12 @@ export class MemoryOptimizerService implements OnModuleInit {
       const afterMetrics = this.getCurrentMemoryMetrics();
       const freedMemory = beforeMetrics.heapUsed - afterMetrics.heapUsed;
       const improvement =
-        beforeMetrics.heapUsed > 0 ? (freedMemory / beforeMetrics.heapUsed) * 100 : 0;
+        beforeMetrics.heapUsed > 0
+          ? (freedMemory / beforeMetrics.heapUsed) * 100
+          : 0;
 
       const optimization: MemoryOptimization = {
-        type: 'cleanup',
+        type: "cleanup",
         timestamp: new Date(),
         duration,
         freedMemory,
@@ -629,7 +660,7 @@ export class MemoryOptimizerService implements OnModuleInit {
       this.logger.error(`Memory pool cleanup failed: ${error.message}`);
 
       const optimization: MemoryOptimization = {
-        type: 'cleanup',
+        type: "cleanup",
         timestamp: new Date(),
         duration: 0,
         freedMemory: 0,
@@ -650,7 +681,7 @@ export class MemoryOptimizerService implements OnModuleInit {
 
   private async resolveMemoryLeaks(): Promise<void> {
     const activeLeaks = Array.from(this.memoryLeaks.values()).filter(
-      (leak) => leak.status === 'active',
+      (leak) => leak.status === "active"
     );
 
     for (const leak of activeLeaks) {
@@ -660,7 +691,7 @@ export class MemoryOptimizerService implements OnModuleInit {
 
       if (growthTrend < 1) {
         // Less than 1% growth
-        leak.status = 'resolved';
+        leak.status = "resolved";
         this.logger.log(`Memory leak resolved: ${leak.type} (${leak.id})`);
       }
     }
@@ -675,11 +706,13 @@ export class MemoryOptimizerService implements OnModuleInit {
 
     let recentAvg: number, olderAvg: number;
 
-    if (leak.type === 'heap') {
-      recentAvg = recent.reduce((sum, m) => sum + m.heapUsed, 0) / recent.length;
+    if (leak.type === "heap") {
+      recentAvg =
+        recent.reduce((sum, m) => sum + m.heapUsed, 0) / recent.length;
       olderAvg = older.reduce((sum, m) => sum + m.heapUsed, 0) / older.length;
-    } else if (leak.type === 'external') {
-      recentAvg = recent.reduce((sum, m) => sum + m.external, 0) / recent.length;
+    } else if (leak.type === "external") {
+      recentAvg =
+        recent.reduce((sum, m) => sum + m.external, 0) / recent.length;
       olderAvg = older.reduce((sum, m) => sum + m.external, 0) / older.length;
     } else {
       return 0;
@@ -692,11 +725,11 @@ export class MemoryOptimizerService implements OnModuleInit {
   // Utility methods
 
   private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
   // Public API methods
@@ -738,17 +771,19 @@ export class MemoryOptimizerService implements OnModuleInit {
       const beforeMetrics = this.getCurrentMemoryMetrics();
       const startTime = Date.now();
 
-      if (typeof global.gc === 'function') {
+      if (typeof global.gc === "function") {
         global.gc();
 
         const duration = Date.now() - startTime;
         const afterMetrics = this.getCurrentMemoryMetrics();
         const freedMemory = beforeMetrics.heapUsed - afterMetrics.heapUsed;
         const improvement =
-          beforeMetrics.heapUsed > 0 ? (freedMemory / beforeMetrics.heapUsed) * 100 : 0;
+          beforeMetrics.heapUsed > 0
+            ? (freedMemory / beforeMetrics.heapUsed) * 100
+            : 0;
 
         const optimization: MemoryOptimization = {
-          type: 'gc',
+          type: "gc",
           timestamp: new Date(),
           duration,
           freedMemory,
@@ -759,13 +794,13 @@ export class MemoryOptimizerService implements OnModuleInit {
         resolve(optimization);
       } else {
         resolve({
-          type: 'gc',
+          type: "gc",
           timestamp: new Date(),
           duration: 0,
           freedMemory: 0,
           improvement: 0,
           success: false,
-          error: 'Garbage collection not available',
+          error: "Garbage collection not available",
         });
       }
     });
@@ -775,7 +810,7 @@ export class MemoryOptimizerService implements OnModuleInit {
     const leak = this.memoryLeaks.get(leakId);
     if (!leak) return false;
 
-    leak.status = 'resolved';
+    leak.status = "resolved";
     this.leakSubject.next(leak);
 
     this.logger.log(`Memory leak manually resolved: ${leakId}`);
@@ -793,6 +828,6 @@ export class MemoryOptimizerService implements OnModuleInit {
     // Final cleanup
     await this.triggerGarbageCollection();
 
-    this.logger.log('Memory optimizer service shutdown');
+    this.logger.log("Memory optimizer service shutdown");
   }
 }

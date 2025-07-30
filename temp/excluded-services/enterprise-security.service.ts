@@ -1,16 +1,16 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Observable, Subject, interval, Subscription } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
-import { TelescopeConfig } from '../interfaces/telescope-config.interface';
-import { Inject } from '@nestjs/common';
-import * as crypto from 'crypto';
-import * as jwt from 'jsonwebtoken';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Observable, Subject, interval } from "rxjs";
+import { map, filter, debounceTime } from "rxjs/operators";
+import { TelescopeConfig } from "../interfaces/telescope-config.interface";
+import { Inject } from "@nestjs/common";
+import * as crypto from "crypto";
+import * as jwt from "jsonwebtoken";
 
 export interface EnterpriseSecurityConfig {
   enabled: boolean;
   authentication: {
     enabled: boolean;
-    methods: ('jwt' | 'oauth2' | 'saml' | 'ldap' | 'active-directory')[];
+    methods: ("jwt" | "oauth2" | "saml" | "ldap" | "active-directory")[];
     jwt: {
       secret: string;
       expiresIn: string;
@@ -47,15 +47,15 @@ export interface EnterpriseSecurityConfig {
   };
   encryption: {
     enabled: boolean;
-    algorithm: 'aes-256-gcm' | 'aes-256-cbc' | 'chacha20-poly1305';
+    algorithm: "aes-256-gcm" | "aes-256-cbc" | "chacha20-poly1305";
     keyRotation: boolean;
     keyRotationInterval: number; // days
   };
   audit: {
     enabled: boolean;
-    logLevel: 'basic' | 'detailed' | 'comprehensive';
+    logLevel: "basic" | "detailed" | "comprehensive";
     retention: number; // days
-    compliance: ('gdpr' | 'sox' | 'hipaa' | 'pci')[];
+    compliance: ("gdpr" | "sox" | "hipaa" | "pci")[];
   };
   compliance: {
     gdpr: {
@@ -95,7 +95,7 @@ export interface SecurityPolicy {
   id: string;
   name: string;
   description: string;
-  type: 'allow' | 'deny';
+  type: "allow" | "deny";
   resources: string[];
   actions: string[];
   conditions: PolicyCondition[];
@@ -104,7 +104,7 @@ export interface SecurityPolicy {
 
 export interface PolicyCondition {
   field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'regex' | 'in' | 'not_in';
+  operator: "equals" | "not_equals" | "contains" | "regex" | "in" | "not_in";
   value: any;
 }
 
@@ -146,7 +146,7 @@ export interface SecurityAuditEvent {
   userId: string;
   action: string;
   resource: string;
-  result: 'success' | 'failure' | 'denied';
+  result: "success" | "failure" | "denied";
   ipAddress: string;
   userAgent: string;
   metadata: Record<string, any>;
@@ -191,31 +191,34 @@ export class EnterpriseSecurityService implements OnModuleInit {
   private readonly users = new Map<string, User>();
   private readonly policies = new Map<string, SecurityPolicy>();
   private readonly auditEvents: SecurityAuditEvent[] = [];
-  private readonly encryptionKeys = new Map<string, { key: Buffer; createdAt: Date }>();
+  private readonly encryptionKeys = new Map<
+    string,
+    { key: Buffer; createdAt: Date }
+  >();
   private readonly config: EnterpriseSecurityConfig;
   private readonly auditSubject = new Subject<SecurityAuditEvent>();
   private readonly authSubject = new Subject<AuthenticationResult>();
   private readonly complianceSubject = new Subject<ComplianceReport>();
-  private keyRotationInterval: Subscription | null = null;
+  private keyRotationInterval: NodeJS.Timeout | null = null;
 
   constructor(
-    @Inject('TELESCOPE_CONFIG')
-    private readonly telescopeConfig: TelescopeConfig,
+    @Inject("TELESCOPE_CONFIG")
+    private readonly telescopeConfig: TelescopeConfig
   ) {
     this.config =
-      (this.telescopeConfig.enterpriseSecurity as unknown as EnterpriseSecurityConfig) ||
+      this.telescopeConfig.enterpriseSecurity ||
       this.getDefaultSecurityConfig();
   }
 
   async onModuleInit(): Promise<void> {
     if (!this.config.enabled) {
-      this.logger.log('Enterprise security disabled');
+      this.logger.log("Enterprise security disabled");
       return;
     }
 
     await this.initializeSecurity();
     this.startKeyRotation();
-    this.logger.log('Enterprise security service initialized');
+    this.logger.log("Enterprise security service initialized");
   }
 
   private getDefaultSecurityConfig(): EnterpriseSecurityConfig {
@@ -223,33 +226,28 @@ export class EnterpriseSecurityService implements OnModuleInit {
       enabled: true,
       authentication: {
         enabled: true,
-        methods: ['jwt'],
+        methods: ["jwt"],
         jwt: {
-          secret: process.env.JWT_SECRET || 'your-secret-key',
-          expiresIn: '1h',
-          refreshExpiresIn: '7d',
+          secret: process.env.JWT_SECRET || "your-secret-key",
+          expiresIn: "1h",
+          refreshExpiresIn: "7d",
         },
         oauth2: {
-          providers: {
-            google: undefined,
-            github: undefined,
-            azure: undefined,
-            okta: undefined,
-          },
+          providers: {},
         },
         saml: {
           enabled: false,
-          entryPoint: '',
-          issuer: '',
-          cert: '',
+          entryPoint: "",
+          issuer: "",
+          cert: "",
         },
         ldap: {
           enabled: false,
-          url: '',
-          bindDN: '',
-          bindCredentials: '',
-          searchBase: '',
-          searchFilter: '',
+          url: "",
+          bindDN: "",
+          bindCredentials: "",
+          searchBase: "",
+          searchFilter: "",
         },
       },
       authorization: {
@@ -260,15 +258,15 @@ export class EnterpriseSecurityService implements OnModuleInit {
       },
       encryption: {
         enabled: true,
-        algorithm: 'aes-256-gcm',
+        algorithm: "aes-256-gcm",
         keyRotation: true,
         keyRotationInterval: 30,
       },
       audit: {
         enabled: true,
-        logLevel: 'detailed',
+        logLevel: "detailed",
         retention: 90,
-        compliance: ['gdpr', 'sox'],
+        compliance: ["gdpr", "sox"],
       },
       compliance: {
         gdpr: {
@@ -316,12 +314,12 @@ export class EnterpriseSecurityService implements OnModuleInit {
     if (!this.config.encryption.enabled) return;
 
     const masterKey = crypto.randomBytes(32);
-    this.encryptionKeys.set('master', {
+    this.encryptionKeys.set("master", {
       key: masterKey,
       createdAt: new Date(),
     });
 
-    this.logger.log('Encryption keys initialized');
+    this.logger.log("Encryption keys initialized");
   }
 
   private async initializeDefaultPolicies(): Promise<void> {
@@ -329,33 +327,35 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
     const defaultPolicies: SecurityPolicy[] = [
       {
-        id: 'admin-full-access',
-        name: 'Administrator Full Access',
-        description: 'Full access for administrators',
-        type: 'allow',
-        resources: ['*'],
-        actions: ['*'],
-        conditions: [{ field: 'roles', operator: 'contains', value: 'admin' }],
+        id: "admin-full-access",
+        name: "Administrator Full Access",
+        description: "Full access for administrators",
+        type: "allow",
+        resources: ["*"],
+        actions: ["*"],
+        conditions: [{ field: "roles", operator: "contains", value: "admin" }],
         priority: 100,
       },
       {
-        id: 'user-read-only',
-        name: 'User Read Only',
-        description: 'Read-only access for regular users',
-        type: 'allow',
-        resources: ['telescope:read', 'telescope:metrics'],
-        actions: ['read', 'view'],
-        conditions: [{ field: 'roles', operator: 'contains', value: 'user' }],
+        id: "user-read-only",
+        name: "User Read Only",
+        description: "Read-only access for regular users",
+        type: "allow",
+        resources: ["telescope:read", "telescope:metrics"],
+        actions: ["read", "view"],
+        conditions: [{ field: "roles", operator: "contains", value: "user" }],
         priority: 50,
       },
       {
-        id: 'deny-sensitive-data',
-        name: 'Deny Sensitive Data Access',
-        description: 'Deny access to sensitive data for non-admin users',
-        type: 'deny',
-        resources: ['telescope:admin', 'telescope:security'],
-        actions: ['*'],
-        conditions: [{ field: 'roles', operator: 'not_in', value: ['admin'] }],
+        id: "deny-sensitive-data",
+        name: "Deny Sensitive Data Access",
+        description: "Deny access to sensitive data for non-admin users",
+        type: "deny",
+        resources: ["telescope:admin", "telescope:security"],
+        actions: ["*"],
+        conditions: [
+          { field: "roles", operator: "not_contains", value: "admin" },
+        ],
         priority: 75,
       },
     ];
@@ -364,33 +364,33 @@ export class EnterpriseSecurityService implements OnModuleInit {
       this.policies.set(policy.id, policy);
     }
 
-    this.logger.log('Default security policies initialized');
+    this.logger.log("Default security policies initialized");
   }
 
   private async initializeDefaultUsers(): Promise<void> {
     const defaultUsers: User[] = [
       {
-        id: 'admin-1',
-        username: 'admin',
-        email: 'admin@telescope.com',
-        firstName: 'System',
-        lastName: 'Administrator',
-        roles: ['admin'],
-        permissions: ['*'],
-        groups: ['administrators'],
+        id: "admin-1",
+        username: "admin",
+        email: "admin@telescope.com",
+        firstName: "System",
+        lastName: "Administrator",
+        roles: ["admin"],
+        permissions: ["*"],
+        groups: ["administrators"],
         lastLogin: new Date(),
         isActive: true,
         metadata: {},
       },
       {
-        id: 'user-1',
-        username: 'user',
-        email: 'user@telescope.com',
-        firstName: 'Regular',
-        lastName: 'User',
-        roles: ['user'],
-        permissions: ['telescope:read', 'telescope:metrics'],
-        groups: ['users'],
+        id: "user-1",
+        username: "user",
+        email: "user@telescope.com",
+        firstName: "Regular",
+        lastName: "User",
+        roles: ["user"],
+        permissions: ["telescope:read", "telescope:metrics"],
+        groups: ["users"],
         lastLogin: new Date(),
         isActive: true,
         metadata: {},
@@ -401,25 +401,25 @@ export class EnterpriseSecurityService implements OnModuleInit {
       this.users.set(user.id, user);
     }
 
-    this.logger.log('Default users initialized');
+    this.logger.log("Default users initialized");
   }
 
   private async initializeComplianceMonitoring(): Promise<void> {
     // Initialize compliance monitoring based on enabled standards
     if (this.config.compliance.gdpr.enabled) {
-      this.logger.log('GDPR compliance monitoring initialized');
+      this.logger.log("GDPR compliance monitoring initialized");
     }
 
     if (this.config.compliance.sox.enabled) {
-      this.logger.log('SOX compliance monitoring initialized');
+      this.logger.log("SOX compliance monitoring initialized");
     }
 
     if (this.config.compliance.hipaa.enabled) {
-      this.logger.log('HIPAA compliance monitoring initialized');
+      this.logger.log("HIPAA compliance monitoring initialized");
     }
 
     if (this.config.compliance.pci.enabled) {
-      this.logger.log('PCI compliance monitoring initialized');
+      this.logger.log("PCI compliance monitoring initialized");
     }
   }
 
@@ -427,7 +427,7 @@ export class EnterpriseSecurityService implements OnModuleInit {
     if (!this.config.encryption.keyRotation) return;
 
     this.keyRotationInterval = interval(
-      this.config.encryption.keyRotationInterval * 24 * 60 * 60 * 1000,
+      this.config.encryption.keyRotationInterval * 24 * 60 * 60 * 1000
     ).subscribe(async () => {
       await this.rotateEncryptionKeys();
     });
@@ -448,34 +448,37 @@ export class EnterpriseSecurityService implements OnModuleInit {
       let result: AuthenticationResult;
 
       switch (credentials.method) {
-        case 'jwt':
+        case "jwt":
           result = await this.authenticateJwt(credentials.token!);
           break;
-        case 'oauth2':
+        case "oauth2":
           result = await this.authenticateOAuth2(credentials.code!);
           break;
-        case 'saml':
+        case "saml":
           result = await this.authenticateSaml(credentials.token!);
           break;
-        case 'ldap':
-          result = await this.authenticateLdap(credentials.username!, credentials.password!);
+        case "ldap":
+          result = await this.authenticateLdap(
+            credentials.username!,
+            credentials.password!
+          );
           break;
         default:
           result = {
             success: false,
-            error: 'Unsupported authentication method',
+            error: "Unsupported authentication method",
             method: credentials.method,
           };
       }
 
       // Log audit event
       await this.logAuditEvent({
-        userId: result.user?.id || 'unknown',
-        action: 'authentication',
-        resource: 'auth',
-        result: result.success ? 'success' : 'failure',
-        ipAddress: 'unknown',
-        userAgent: 'unknown',
+        userId: result.user?.id || "unknown",
+        action: "authentication",
+        resource: "auth",
+        result: result.success ? "success" : "failure",
+        ipAddress: "unknown",
+        userAgent: "unknown",
         metadata: {
           method: credentials.method,
           duration: Date.now() - startTime,
@@ -492,12 +495,12 @@ export class EnterpriseSecurityService implements OnModuleInit {
       };
 
       await this.logAuditEvent({
-        userId: 'unknown',
-        action: 'authentication',
-        resource: 'auth',
-        result: 'failure',
-        ipAddress: 'unknown',
-        userAgent: 'unknown',
+        userId: "unknown",
+        action: "authentication",
+        resource: "auth",
+        result: "failure",
+        ipAddress: "unknown",
+        userAgent: "unknown",
         metadata: { method: credentials.method, error: error.message },
       });
 
@@ -508,21 +511,24 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
   private async authenticateJwt(token: string): Promise<AuthenticationResult> {
     try {
-      const decoded = jwt.verify(token, this.config.authentication.jwt.secret) as any;
+      const decoded = jwt.verify(
+        token,
+        this.config.authentication.jwt.secret
+      ) as any;
       const user = this.users.get(decoded.userId);
 
       if (!user || !user.isActive) {
         return {
           success: false,
-          error: 'Invalid or inactive user',
-          method: 'jwt',
+          error: "Invalid or inactive user",
+          method: "jwt",
         };
       }
 
       const newToken = jwt.sign(
         { userId: user.id, roles: user.roles },
         this.config.authentication.jwt.secret,
-        { expiresIn: this.config.authentication.jwt.expiresIn as any },
+        { expiresIn: this.config.authentication.jwt.expiresIn }
       );
 
       return {
@@ -530,24 +536,26 @@ export class EnterpriseSecurityService implements OnModuleInit {
         user,
         token: newToken,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-        method: 'jwt',
+        method: "jwt",
       };
     } catch (error) {
       return {
         success: false,
-        error: 'Invalid JWT token',
-        method: 'jwt',
+        error: "Invalid JWT token",
+        method: "jwt",
       };
     }
   }
 
-  private async authenticateOAuth2(code: string): Promise<AuthenticationResult> {
+  private async authenticateOAuth2(
+    code: string
+  ): Promise<AuthenticationResult> {
     // OAuth2 authentication implementation
     // This would exchange the authorization code for tokens and user info
     return {
       success: false,
-      error: 'OAuth2 authentication not implemented',
-      method: 'oauth2',
+      error: "OAuth2 authentication not implemented",
+      method: "oauth2",
     };
   }
 
@@ -555,20 +563,20 @@ export class EnterpriseSecurityService implements OnModuleInit {
     // SAML authentication implementation
     return {
       success: false,
-      error: 'SAML authentication not implemented',
-      method: 'saml',
+      error: "SAML authentication not implemented",
+      method: "saml",
     };
   }
 
   private async authenticateLdap(
     username: string,
-    password: string,
+    password: string
   ): Promise<AuthenticationResult> {
     // LDAP authentication implementation
     return {
       success: false,
-      error: 'LDAP authentication not implemented',
-      method: 'ldap',
+      error: "LDAP authentication not implemented",
+      method: "ldap",
     };
   }
 
@@ -578,21 +586,26 @@ export class EnterpriseSecurityService implements OnModuleInit {
     userId: string,
     action: string,
     resource: string,
-    context: Record<string, any> = {},
+    context: Record<string, any> = {}
   ): Promise<AuthorizationResult> {
     const user = this.users.get(userId);
     if (!user || !user.isActive) {
       return {
         allowed: false,
-        reason: 'User not found or inactive',
+        reason: "User not found or inactive",
         policies: [],
         conditions: [],
       };
     }
 
-    const applicablePolicies = this.getApplicablePolicies(user, action, resource, context);
-    const allowPolicies = applicablePolicies.filter((p) => p.type === 'allow');
-    const denyPolicies = applicablePolicies.filter((p) => p.type === 'deny');
+    const applicablePolicies = this.getApplicablePolicies(
+      user,
+      action,
+      resource,
+      context
+    );
+    const allowPolicies = applicablePolicies.filter((p) => p.type === "allow");
+    const denyPolicies = applicablePolicies.filter((p) => p.type === "deny");
 
     // Check deny policies first (higher priority)
     for (const policy of denyPolicies) {
@@ -601,10 +614,10 @@ export class EnterpriseSecurityService implements OnModuleInit {
           userId,
           action,
           resource,
-          result: 'denied',
-          ipAddress: context.ipAddress || 'unknown',
-          userAgent: context.userAgent || 'unknown',
-          metadata: { policy: policy.id, reason: 'Policy denied access' },
+          result: "denied",
+          ipAddress: context.ipAddress || "unknown",
+          userAgent: context.userAgent || "unknown",
+          metadata: { policy: policy.id, reason: "Policy denied access" },
         });
 
         return {
@@ -623,9 +636,9 @@ export class EnterpriseSecurityService implements OnModuleInit {
           userId,
           action,
           resource,
-          result: 'success',
-          ipAddress: context.ipAddress || 'unknown',
-          userAgent: context.userAgent || 'unknown',
+          result: "success",
+          ipAddress: context.ipAddress || "unknown",
+          userAgent: context.userAgent || "unknown",
           metadata: { policy: policy.id },
         });
 
@@ -642,15 +655,15 @@ export class EnterpriseSecurityService implements OnModuleInit {
       userId,
       action,
       resource,
-      result: 'denied',
-      ipAddress: context.ipAddress || 'unknown',
-      userAgent: context.userAgent || 'unknown',
-      metadata: { reason: 'No applicable allow policy' },
+      result: "denied",
+      ipAddress: context.ipAddress || "unknown",
+      userAgent: context.userAgent || "unknown",
+      metadata: { reason: "No applicable allow policy" },
     });
 
     return {
       allowed: false,
-      reason: 'No applicable allow policy found',
+      reason: "No applicable allow policy found",
       policies: [],
       conditions: [],
     };
@@ -660,18 +673,19 @@ export class EnterpriseSecurityService implements OnModuleInit {
     user: User,
     action: string,
     resource: string,
-    context: Record<string, any>,
+    context: Record<string, any>
   ): SecurityPolicy[] {
     return Array.from(this.policies.values())
       .filter((policy) => {
         // Check if policy applies to the resource
         const resourceMatch =
-          policy.resources.includes('*') ||
+          policy.resources.includes("*") ||
           policy.resources.includes(resource) ||
           policy.resources.some((r) => resource.startsWith(r));
 
         // Check if policy applies to the action
-        const actionMatch = policy.actions.includes('*') || policy.actions.includes(action);
+        const actionMatch =
+          policy.actions.includes("*") || policy.actions.includes(action);
 
         return resourceMatch && actionMatch;
       })
@@ -681,7 +695,7 @@ export class EnterpriseSecurityService implements OnModuleInit {
   private evaluatePolicy(
     policy: SecurityPolicy,
     user: User,
-    context: Record<string, any>,
+    context: Record<string, any>
   ): boolean {
     for (const condition of policy.conditions) {
       if (!this.evaluateCondition(condition, user, context)) {
@@ -694,18 +708,18 @@ export class EnterpriseSecurityService implements OnModuleInit {
   private evaluateCondition(
     condition: PolicyCondition,
     user: User,
-    context: Record<string, any>,
+    context: Record<string, any>
   ): boolean {
     let fieldValue: any;
 
     // Get field value from user or context
-    if (condition.field === 'roles') {
+    if (condition.field === "roles") {
       fieldValue = user.roles;
-    } else if (condition.field === 'permissions') {
+    } else if (condition.field === "permissions") {
       fieldValue = user.permissions;
-    } else if (condition.field === 'groups') {
+    } else if (condition.field === "groups") {
       fieldValue = user.groups;
-    } else if (condition.field === 'tenantId') {
+    } else if (condition.field === "tenantId") {
       fieldValue = user.tenantId;
     } else {
       fieldValue = context[condition.field];
@@ -713,20 +727,24 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
     // Evaluate condition
     switch (condition.operator) {
-      case 'equals':
+      case "equals":
         return fieldValue === condition.value;
-      case 'not_equals':
+      case "not_equals":
         return fieldValue !== condition.value;
-      case 'contains':
+      case "contains":
         return Array.isArray(fieldValue)
           ? fieldValue.includes(condition.value)
           : fieldValue?.includes(condition.value);
-      case 'regex':
+      case "regex":
         return new RegExp(condition.value).test(fieldValue);
-      case 'in':
-        return Array.isArray(condition.value) ? condition.value.includes(fieldValue) : false;
-      case 'not_in':
-        return Array.isArray(condition.value) ? !condition.value.includes(fieldValue) : true;
+      case "in":
+        return Array.isArray(condition.value)
+          ? condition.value.includes(fieldValue)
+          : false;
+      case "not_in":
+        return Array.isArray(condition.value)
+          ? !condition.value.includes(fieldValue)
+          : true;
       default:
         return false;
     }
@@ -734,7 +752,7 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
   // Encryption methods
 
-  async encrypt(data: string, keyId: string = 'master'): Promise<string> {
+  async encrypt(data: string, keyId: string = "master"): Promise<string> {
     if (!this.config.encryption.enabled) {
       return data;
     }
@@ -745,12 +763,15 @@ export class EnterpriseSecurityService implements OnModuleInit {
     }
 
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher(this.config.encryption.algorithm, keyData.key);
+    const cipher = crypto.createCipher(
+      this.config.encryption.algorithm,
+      keyData.key
+    );
 
-    let encrypted = cipher.update(data, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    let encrypted = cipher.update(data, "utf8", "hex");
+    encrypted += cipher.final("hex");
 
-    return `${keyId}:${iv.toString('hex')}:${encrypted}`;
+    return `${keyId}:${iv.toString("hex")}:${encrypted}`;
   }
 
   async decrypt(encryptedData: string): Promise<string> {
@@ -758,39 +779,42 @@ export class EnterpriseSecurityService implements OnModuleInit {
       return encryptedData;
     }
 
-    const [keyId, ivHex, encrypted] = encryptedData.split(':');
+    const [keyId, ivHex, encrypted] = encryptedData.split(":");
     const keyData = this.encryptionKeys.get(keyId);
 
     if (!keyData) {
       throw new Error(`Encryption key not found: ${keyId}`);
     }
 
-    const iv = Buffer.from(ivHex, 'hex');
-    const decipher = crypto.createDecipher(this.config.encryption.algorithm, keyData.key);
+    const iv = Buffer.from(ivHex, "hex");
+    const decipher = crypto.createDecipher(
+      this.config.encryption.algorithm,
+      keyData.key
+    );
 
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted = decipher.update(encrypted, "hex", "utf8");
+    decrypted += decipher.final("utf8");
 
     return decrypted;
   }
 
   private async rotateEncryptionKeys(): Promise<void> {
-    this.logger.log('Rotating encryption keys');
+    this.logger.log("Rotating encryption keys");
 
     const newKey = crypto.randomBytes(32);
-    this.encryptionKeys.set('master', {
+    this.encryptionKeys.set("master", {
       key: newKey,
       createdAt: new Date(),
     });
 
     // In a real implementation, you would re-encrypt data with the new key
-    this.logger.log('Encryption keys rotated successfully');
+    this.logger.log("Encryption keys rotated successfully");
   }
 
   // Audit and compliance methods
 
   private async logAuditEvent(
-    event: Omit<SecurityAuditEvent, 'id' | 'timestamp' | 'compliance'>,
+    event: Omit<SecurityAuditEvent, "id" | "timestamp" | "compliance">
   ): Promise<void> {
     if (!this.config.audit.enabled) return;
 
@@ -809,8 +833,12 @@ export class EnterpriseSecurityService implements OnModuleInit {
     this.auditEvents.push(auditEvent);
 
     // Keep only recent audit events based on retention policy
-    const cutoffDate = new Date(Date.now() - this.config.audit.retention * 24 * 60 * 60 * 1000);
-    const recentEvents = this.auditEvents.filter((event) => event.timestamp > cutoffDate);
+    const cutoffDate = new Date(
+      Date.now() - this.config.audit.retention * 24 * 60 * 60 * 1000
+    );
+    const recentEvents = this.auditEvents.filter(
+      (event) => event.timestamp > cutoffDate
+    );
     this.auditEvents.length = 0;
     this.auditEvents.push(...recentEvents);
 
@@ -883,17 +911,17 @@ export class EnterpriseSecurityService implements OnModuleInit {
     // Check data retention
     if (this.config.compliance.gdpr.dataRetention > 2555) {
       // 7 years
-      issues.push('Data retention period exceeds GDPR requirements');
+      issues.push("Data retention period exceeds GDPR requirements");
     }
 
     // Check right to be forgotten
     if (!this.config.compliance.gdpr.rightToBeForgotten) {
-      issues.push('Right to be forgotten not implemented');
+      issues.push("Right to be forgotten not implemented");
     }
 
     // Check data portability
     if (!this.config.compliance.gdpr.dataPortability) {
-      issues.push('Data portability not implemented');
+      issues.push("Data portability not implemented");
     }
 
     return issues;
@@ -904,12 +932,12 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
     // Check audit trail
     if (!this.config.compliance.sox.auditTrail) {
-      issues.push('Audit trail not enabled');
+      issues.push("Audit trail not enabled");
     }
 
     // Check access controls
     if (!this.config.compliance.sox.accessControls) {
-      issues.push('Access controls not properly configured');
+      issues.push("Access controls not properly configured");
     }
 
     return issues;
@@ -920,12 +948,12 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
     // Check PHI protection
     if (!this.config.compliance.hipaa.phiProtection) {
-      issues.push('PHI protection not enabled');
+      issues.push("PHI protection not enabled");
     }
 
     // Check access logging
     if (!this.config.compliance.hipaa.accessLogging) {
-      issues.push('Access logging not enabled');
+      issues.push("Access logging not enabled");
     }
 
     return issues;
@@ -936,12 +964,12 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
     // Check card data encryption
     if (!this.config.compliance.pci.cardDataEncryption) {
-      issues.push('Card data encryption not enabled');
+      issues.push("Card data encryption not enabled");
     }
 
     // Check tokenization
     if (!this.config.compliance.pci.tokenization) {
-      issues.push('Tokenization not enabled');
+      issues.push("Tokenization not enabled");
     }
 
     return issues;
@@ -957,7 +985,7 @@ export class EnterpriseSecurityService implements OnModuleInit {
     return this.users.get(userId);
   }
 
-  async createUser(userData: Omit<User, 'id' | 'lastLogin'>): Promise<User> {
+  async createUser(userData: Omit<User, "id" | "lastLogin">): Promise<User> {
     const user: User = {
       ...userData,
       id: crypto.randomUUID(),
@@ -968,7 +996,10 @@ export class EnterpriseSecurityService implements OnModuleInit {
     return user;
   }
 
-  async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
+  async updateUser(
+    userId: string,
+    updates: Partial<User>
+  ): Promise<User | null> {
     const user = this.users.get(userId);
     if (!user) return null;
 
@@ -985,7 +1016,9 @@ export class EnterpriseSecurityService implements OnModuleInit {
     return Array.from(this.policies.values());
   }
 
-  async createPolicy(policy: Omit<SecurityPolicy, 'id'>): Promise<SecurityPolicy> {
+  async createPolicy(
+    policy: Omit<SecurityPolicy, "id">
+  ): Promise<SecurityPolicy> {
     const newPolicy: SecurityPolicy = {
       ...policy,
       id: crypto.randomUUID(),
@@ -997,7 +1030,7 @@ export class EnterpriseSecurityService implements OnModuleInit {
 
   async updatePolicy(
     policyId: string,
-    updates: Partial<SecurityPolicy>,
+    updates: Partial<SecurityPolicy>
   ): Promise<SecurityPolicy | null> {
     const policy = this.policies.get(policyId);
     if (!policy) return null;
@@ -1032,6 +1065,6 @@ export class EnterpriseSecurityService implements OnModuleInit {
       clearInterval(this.keyRotationInterval as any);
     }
 
-    this.logger.log('Enterprise security service shutdown');
+    this.logger.log("Enterprise security service shutdown");
   }
 }

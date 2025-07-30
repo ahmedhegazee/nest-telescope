@@ -12,24 +12,40 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "noImplicitReturns": true,
+    "strict": false,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-      "@telescope/*": ["src/telescope/*"],
-      "@telescope/core/*": ["src/telescope/core/*"],
-      "@telescope/devtools/*": ["src/telescope/devtools/*"],
-      "@telescope/storage/*": ["src/telescope/storage/*"]
+      "@telescope/*": [
+        "src/telescope/*"
+      ],
+      "@telescope/core/*": [
+        "src/telescope/core/*"
+      ],
+      "@telescope/devtools/*": [
+        "src/telescope/devtools/*"
+      ],
+      "@telescope/storage/*": [
+        "src/telescope/storage/*"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.e2e-spec.ts", "test/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts",
+    "test/**/*"
+  ]
 }

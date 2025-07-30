@@ -385,7 +385,7 @@ const report = securityAuditService.generateSecurityReport();
 Sample Security Report:
 ```
 # Security Audit Report
-Generated: 2024-01-15T10:30:00.000Z
+Generated: 2025-07-30T10:30:00.000Z
 
 ## Executive Summary
 - Overall Security Score: 85/100

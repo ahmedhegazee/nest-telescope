@@ -1,6 +1,6 @@
 /**
  * @nestjs/telescope - Advanced observability and monitoring solution for NestJS applications
- * 
+ *
  * This package provides comprehensive monitoring, analytics, and debugging capabilities
  * for NestJS applications with ML-powered insights and enterprise features.
  */
@@ -48,4 +48,4 @@ export * from './telescope/watchers/interfaces/watcher.interface';
 export * from './telescope/storage/interfaces/storage.interface';
 
 // Default configuration
-export { defaultTelescopeConfig } from './telescope/core/interfaces/telescope-config.interface'; 
+export { defaultTelescopeConfig } from './telescope/core/interfaces/telescope-config.interface';

@@ -133,7 +133,7 @@ class StatisticalAnalyzer {
   static detectOutliers(data: number[], threshold: number = 2.5): number[] {
     const mean = data.reduce((a, b) => a + b, 0) / data.length;
     const stdDev = this.calculateStandardDeviation(data);
-    return data.filter((val) => Math.abs(this.calculateZScore(val, mean, stdDev)) > threshold);
+    return data.filter(val => Math.abs(this.calculateZScore(val, mean, stdDev)) > threshold);
   }
 
   static exponentialSmoothing(data: number[], alpha: number = 0.3): number[] {
@@ -144,10 +144,7 @@ class StatisticalAnalyzer {
     return result;
   }
 
-  static linearRegression(
-    x: number[],
-    y: number[],
-  ): { slope: number; intercept: number; rSquared: number } {
+  static linearRegression(x: number[], y: number[]): { slope: number; intercept: number; rSquared: number } {
     const n = x.length;
     const sumX = x.reduce((a, b) => a + b, 0);
     const sumY = y.reduce((a, b) => a + b, 0);
@@ -162,7 +159,7 @@ class StatisticalAnalyzer {
     const yMean = sumY / n;
     const ssRes = y.reduce((sum, yi, i) => sum + Math.pow(yi - (slope * x[i] + intercept), 2), 0);
     const ssTot = y.reduce((sum, yi) => sum + Math.pow(yi - yMean, 2), 0);
-    const rSquared = 1 - ssRes / ssTot;
+    const rSquared = 1 - (ssRes / ssTot);
 
     return { slope, intercept, rSquared };
   }
@@ -184,26 +181,26 @@ export class MLAnalyticsService implements OnModuleInit {
       zScoreThreshold: 2.5,
       windowSize: 50,
       minDataPoints: 10,
-      confidenceThreshold: 0.7,
+      confidenceThreshold: 0.7
     },
     regressionAnalysis: {
       windowSize: 100,
       rSquaredThreshold: 0.5,
-      significantChangeThreshold: 0.1, // 10%
+      significantChangeThreshold: 0.1 // 10%
     },
     prediction: {
       smoothingFactor: 0.3,
       predictionHorizon: {
         short: 6, // 6 hours
         medium: 24, // 24 hours
-        long: 168, // 7 days
-      },
-    },
+        long: 168 // 7 days
+      }
+    }
   };
 
   constructor(
     private readonly analyticsService: AnalyticsService,
-    private readonly performanceCorrelationService: PerformanceCorrelationService,
+    private readonly performanceCorrelationService: PerformanceCorrelationService
   ) {}
 
   async onModuleInit() {
@@ -213,7 +210,7 @@ export class MLAnalyticsService implements OnModuleInit {
 
   private startMLAnalysis() {
     // Subscribe to analytics data and perform ML analysis
-    this.analyticsService.getAnalyticsStream().subscribe((data) => {
+    this.analyticsService.getAnalyticsStream().subscribe(data => {
       this.updateDataHistory(data);
       this.performAnomalyDetection(data);
       this.performRegressionAnalysis(data);
@@ -222,47 +219,32 @@ export class MLAnalyticsService implements OnModuleInit {
     });
 
     // Periodic analysis for deeper insights
-    interval(300000).subscribe(() => {
-      // Every 5 minutes
+    interval(300000).subscribe(() => { // Every 5 minutes
       this.performAdvancedAnalysis();
     });
   }
 
   private updateDataHistory(data: AnalyticsData) {
-    // Extract numeric values from the analytics data
-    const metrics: Record<string, number> = {
-      response_time: data.overview.averageResponseTime,
-      error_rate: data.overview.errorRate,
-      throughput: data.overview.throughput,
-      active_users: data.overview.activeUsers,
-      db_connections: data.database.connectionHealth.activeConnections,
+    const metrics = {
+      'response_time': data.overview.averageResponseTime,
+      'error_rate': data.overview.errorRate,
+      'throughput': data.overview.throughput,
+      'active_users': data.overview.activeUsers,
+      'cpu_usage': data.performance.resourceUsage.cpu,
+      'memory_usage': data.performance.resourceUsage.memory,
+      'db_connections': data.database.connectionHealth.activeConnections
     };
 
-    // Handle TimeSeries arrays for CPU and memory
-    if (data.performance.resourceUsage.cpu.length > 0) {
-      const latestCpu =
-        data.performance.resourceUsage.cpu[data.performance.resourceUsage.cpu.length - 1];
-      metrics['cpu_usage'] = latestCpu.value;
-    }
-
-    if (data.performance.resourceUsage.memory.length > 0) {
-      const latestMemory =
-        data.performance.resourceUsage.memory[data.performance.resourceUsage.memory.length - 1];
-      metrics['memory_usage'] = latestMemory.value;
-    }
-
     Object.entries(metrics).forEach(([metric, value]) => {
-      if (typeof value === 'number' && !isNaN(value)) {
-        if (!this.dataHistory.has(metric)) {
-          this.dataHistory.set(metric, []);
-        }
-        const history = this.dataHistory.get(metric)!;
-        history.push(value);
-
-        // Keep only recent data
-        if (history.length > 1000) {
-          history.shift();
-        }
+      if (!this.dataHistory.has(metric)) {
+        this.dataHistory.set(metric, []);
+      }
+      const history = this.dataHistory.get(metric)!;
+      history.push(value);
+      
+      // Keep only recent data
+      if (history.length > 1000) {
+        history.shift();
       }
     });
   }
@@ -294,7 +276,7 @@ export class MLAnalyticsService implements OnModuleInit {
           deviation: Math.abs(currentValue - mean),
           confidence: Math.min(Math.abs(zScore) / 5, 1), // Normalize to 0-1
           description: this.generateAnomalyDescription(metric, currentValue, mean, zScore),
-          suggestedActions: this.generateAnomalySuggestions(metric, zScore > 0),
+          suggestedActions: this.generateAnomalySuggestions(metric, zScore > 0)
         };
 
         anomalies.push(anomaly);
@@ -323,11 +305,8 @@ export class MLAnalyticsService implements OnModuleInit {
 
       if (regression.rSquared > this.config.regressionAnalysis.rSquaredThreshold) {
         const regressionRate = (regression.slope / recentHistory[0]) * 100; // Percentage change per time unit
-
-        if (
-          Math.abs(regressionRate) >
-          this.config.regressionAnalysis.significantChangeThreshold * 100
-        ) {
+        
+        if (Math.abs(regressionRate) > this.config.regressionAnalysis.significantChangeThreshold * 100) {
           const analysis: RegressionAnalysis = {
             id: `regression_${Date.now()}_${metric}`,
             timestamp: new Date(),
@@ -339,7 +318,7 @@ export class MLAnalyticsService implements OnModuleInit {
             confidence: regression.rSquared,
             predictedValue: regression.slope * (recentHistory.length - 1) + regression.intercept,
             actualValue: recentHistory[recentHistory.length - 1],
-            impactAssessment: this.assessRegressionImpact(metric, regressionRate),
+            impactAssessment: this.assessRegressionImpact(metric, regressionRate)
           };
 
           regressions.push(analysis);
@@ -360,17 +339,13 @@ export class MLAnalyticsService implements OnModuleInit {
       if (history.length < 50) return;
 
       // Use exponential smoothing for prediction
-      const smoothed = StatisticalAnalyzer.exponentialSmoothing(
-        history,
-        this.config.prediction.smoothingFactor,
-      );
+      const smoothed = StatisticalAnalyzer.exponentialSmoothing(history, this.config.prediction.smoothingFactor);
       const trend = this.calculateTrend(smoothed.slice(-20));
 
       // Generate short-term prediction (6 hours)
       const currentValue = history[history.length - 1];
       const recentTrend = smoothed[smoothed.length - 1] - smoothed[smoothed.length - 2];
-      const predictedValue =
-        currentValue + recentTrend * this.config.prediction.predictionHorizon.short;
+      const predictedValue = currentValue + recentTrend * this.config.prediction.predictionHorizon.short;
 
       const insight: PredictiveInsight = {
         id: `prediction_${Date.now()}_${metric}`,
@@ -385,7 +360,7 @@ export class MLAnalyticsService implements OnModuleInit {
         trend,
         riskLevel: this.assessPredictionRisk(metric, predictedValue, currentValue),
         recommendedActions: this.generatePredictionRecommendations(metric, trend, predictedValue),
-        thresholds: this.getMetricThresholds(metric),
+        thresholds: this.getMetricThresholds(metric)
       };
 
       insights.push(insight);
@@ -401,21 +376,20 @@ export class MLAnalyticsService implements OnModuleInit {
     // This would analyze slow queries and suggest optimizations
     const suggestions: QueryOptimizationSuggestion[] = [];
 
-    data.database.slowQueries.forEach((query) => {
-      if (query.averageTime > 1000) {
-        // Queries taking more than 1 second on average
+    data.database.slowQueries.forEach(query => {
+      if (query.executionTime > 1000) { // Queries taking more than 1 second
         const suggestion: QueryOptimizationSuggestion = {
-          id: `optimization_${Date.now()}_${query.query}`,
+          id: `optimization_${Date.now()}_${query.queryHash}`,
           timestamp: new Date(),
-          queryHash: query.query, // Use query as hash for now
-          query: query.query,
+          queryHash: query.queryHash,
+          query: query.sql,
           table: query.table,
           currentPerformance: {
-            executionTime: query.averageTime,
-            ioOperations: 0, // Not available in current interface
-            cpuUsage: 0, // Would be calculated from actual metrics
+            executionTime: query.executionTime,
+            ioOperations: query.rowsExamined || 0,
+            cpuUsage: 0 // Would be calculated from actual metrics
           },
-          optimizationStrategy: this.suggestOptimizationStrategy(query),
+          optimizationStrategy: this.suggestOptimizationStrategy(query)
         };
 
         suggestions.push(suggestion);
@@ -462,12 +436,7 @@ export class MLAnalyticsService implements OnModuleInit {
     return 'unknown';
   }
 
-  private generateAnomalyDescription(
-    metric: string,
-    value: number,
-    baseline: number,
-    zScore: number,
-  ): string {
+  private generateAnomalyDescription(metric: string, value: number, baseline: number, zScore: number): string {
     const direction = zScore > 0 ? 'increased' : 'decreased';
     const percentage = Math.abs(((value - baseline) / baseline) * 100).toFixed(1);
     return `${metric} has ${direction} by ${percentage}% (current: ${value.toFixed(2)}, baseline: ${baseline.toFixed(2)})`;
@@ -475,55 +444,35 @@ export class MLAnalyticsService implements OnModuleInit {
 
   private generateAnomalySuggestions(metric: string, isIncrease: boolean): string[] {
     const suggestions = [];
-
+    
     if (metric.includes('response_time') && isIncrease) {
-      suggestions.push(
-        'Check for slow database queries',
-        'Review recent deployments',
-        'Monitor CPU and memory usage',
-      );
+      suggestions.push('Check for slow database queries', 'Review recent deployments', 'Monitor CPU and memory usage');
     } else if (metric.includes('error_rate') && isIncrease) {
-      suggestions.push(
-        'Check application logs',
-        'Review recent code changes',
-        'Verify external service availability',
-      );
+      suggestions.push('Check application logs', 'Review recent code changes', 'Verify external service availability');
     } else if (metric.includes('memory') && isIncrease) {
-      suggestions.push(
-        'Check for memory leaks',
-        'Review garbage collection settings',
-        'Monitor application memory usage',
-      );
+      suggestions.push('Check for memory leaks', 'Review garbage collection settings', 'Monitor application memory usage');
     }
 
     return suggestions.length > 0 ? suggestions : ['Investigate the root cause', 'Monitor closely'];
   }
 
-  private assessRegressionImpact(
-    metric: string,
-    regressionRate: number,
-  ): RegressionAnalysis['impactAssessment'] {
-    const severity =
-      Math.abs(regressionRate) > 50
-        ? 'critical'
-        : Math.abs(regressionRate) > 25
-          ? 'high'
-          : Math.abs(regressionRate) > 10
-            ? 'medium'
-            : 'low';
+  private assessRegressionImpact(metric: string, regressionRate: number): RegressionAnalysis['impactAssessment'] {
+    const severity = Math.abs(regressionRate) > 50 ? 'critical' : 
+                    Math.abs(regressionRate) > 25 ? 'high' : 
+                    Math.abs(regressionRate) > 10 ? 'medium' : 'low';
 
     return {
       severity,
       affectedUsers: this.estimateAffectedUsers(metric, regressionRate),
       estimatedLoss: this.estimateLoss(metric, regressionRate),
-      timeToRevert: this.estimateRevertTime(severity),
+      timeToRevert: this.estimateRevertTime(severity)
     };
   }
 
   private calculateTrend(data: number[]): PredictiveInsight['trend'] {
     const regression = StatisticalAnalyzer.linearRegression(
       data.map((_, i) => i),
-      data,
+      data
     );
 
     if (Math.abs(regression.slope) < 0.01) return 'stable';
@@ -538,7 +487,7 @@ export class MLAnalyticsService implements OnModuleInit {
     const stdDev = StatisticalAnalyzer.calculateStandardDeviation(recentData);
     const mean = recentData.reduce((a, b) => a + b, 0) / recentData.length;
     const coefficientOfVariation = stdDev / Math.abs(mean);
-
+    
     // Lower coefficient of variation = higher confidence
     return Math.max(0, 1 - coefficientOfVariation);
   }
@@ -550,11 +499,7 @@ export class MLAnalyticsService implements OnModuleInit {
     return 'resource';
   }
 
-  private assessPredictionRisk(
-    metric: string,
-    predicted: number,
-    current: number,
-  ): PredictiveInsight['riskLevel'] {
+  private assessPredictionRisk(metric: string, predicted: number, current: number): PredictiveInsight['riskLevel'] {
     const change = Math.abs((predicted - current) / current);
     if (change > 0.5) return 'critical';
     if (change > 0.3) return 'high';
@@ -562,30 +507,16 @@ export class MLAnalyticsService implements OnModuleInit {
     return 'low';
   }
 
-  private generatePredictionRecommendations(
-    metric: string,
-    trend: string,
-    predictedValue: number,
-  ): string[] {
+  private generatePredictionRecommendations(metric: string, trend: string, predictedValue: number): string[] {
     const recommendations = [];
-
+    
     if (trend === 'increasing' && metric.includes('response_time')) {
-      recommendations.push(
-        'Consider scaling infrastructure',
-        'Optimize database queries',
-        'Review caching strategy',
-      );
+      recommendations.push('Consider scaling infrastructure', 'Optimize database queries', 'Review caching strategy');
     } else if (trend === 'increasing' && metric.includes('error_rate')) {
-      recommendations.push(
-        'Investigate error patterns',
-        'Enhance error handling',
-        'Monitor dependencies',
-      );
+      recommendations.push('Investigate error patterns', 'Enhance error handling', 'Monitor dependencies');
     }
-
-    return recommendations.length > 0
-      ? recommendations
-      : ['Monitor closely', 'Review system health'];
+    
+    return recommendations.length > 0 ? recommendations : ['Monitor closely', 'Review system health'];
   }
 
   private getMetricThresholds(metric: string): { warning: number; critical: number } {
@@ -594,13 +525,11 @@ export class MLAnalyticsService implements OnModuleInit {
     if (metric.includes('error_rate')) return { warning: 0.01, critical: 0.05 };
     if (metric.includes('cpu')) return { warning: 0.7, critical: 0.9 };
     if (metric.includes('memory')) return { warning: 0.8, critical: 0.95 };
-
+    
     return { warning: 100, critical: 200 };
   }
 
-  private suggestOptimizationStrategy(
-    query: any,
-  ): QueryOptimizationSuggestion['optimizationStrategy'] {
+  private suggestOptimizationStrategy(query: any): QueryOptimizationSuggestion['optimizationStrategy'] {
     // Analyze query patterns and suggest optimizations
     let type: 'index' | 'rewrite' | 'cache' | 'partition' | 'normalize' = 'index';
     let suggestion = 'Consider adding an index';
@@ -629,12 +558,12 @@ export class MLAnalyticsService implements OnModuleInit {
 
   private generateAlertsFromAnomalies(anomalies: AnomalyDetection[]) {
     const alerts: MLAlert[] = anomalies
-      .filter((anomaly) => anomaly.severity === 'high' || anomaly.severity === 'critical')
-      .map((anomaly) => ({
+      .filter(anomaly => anomaly.severity === 'high' || anomaly.severity === 'critical')
+      .map(anomaly => ({
         id: `alert_${Date.now()}_${anomaly.id}`,
         timestamp: new Date(),
         type: 'anomaly' as const,
-        severity: anomaly.severity === 'critical' ? ('critical' as const) : ('error' as const),
+        severity: anomaly.severity === 'critical' ? 'critical' as const : 'error' as const,
         title: `Anomaly Detected: ${anomaly.metric}`,
         description: anomaly.description,
         component: anomaly.component,
@@ -642,27 +571,23 @@ export class MLAnalyticsService implements OnModuleInit {
         triggeredBy: {
           value: anomaly.value,
           threshold: anomaly.baseline,
-          confidence: anomaly.confidence,
+          confidence: anomaly.confidence
         },
         actions: [
           {
             type: 'investigate' as const,
             description: 'Investigate root cause of anomaly',
             priority: 1,
-            automated: false,
+            automated: false
           },
-          ...(anomaly.severity === 'critical'
-            ? [
-                {
-                  type: 'alert' as const,
-                  description: 'Notify on-call engineer',
-                  priority: 0,
-                  automated: true,
-                },
-              ]
-            : []),
+          ...(anomaly.severity === 'critical' ? [{
+            type: 'alert' as const,
+            description: 'Notify on-call engineer',
+            priority: 0,
+            automated: true
+          }] : [])
         ],
-        relatedInsights: [],
+        relatedInsights: []
       }));
 
     if (alerts.length > 0) {
@@ -690,14 +615,10 @@ export class MLAnalyticsService implements OnModuleInit {
 
   private estimateRevertTime(severity: RegressionAnalysis['impactAssessment']['severity']): string {
     switch (severity) {
-      case 'critical':
-        return '< 1 hour';
-      case 'high':
-        return '< 4 hours';
-      case 'medium':
-        return '< 24 hours';
-      default:
-        return '< 7 days';
+      case 'critical': return '< 1 hour';
+      case 'high': return '< 4 hours';
+      case 'medium': return '< 24 hours';
+      default: return '< 7 days';
     }
   }
 
@@ -746,14 +667,14 @@ export class MLAnalyticsService implements OnModuleInit {
   // Administrative methods
   acknowledgeAlert(alertId: string): boolean {
     const currentAlerts = this.alertSubject.value;
-    const updatedAlerts = currentAlerts.filter((alert) => alert.id !== alertId);
+    const updatedAlerts = currentAlerts.filter(alert => alert.id !== alertId);
     this.alertSubject.next(updatedAlerts);
     return currentAlerts.length !== updatedAlerts.length;
   }
 
   dismissAnomaly(anomalyId: string): boolean {
     const currentAnomalies = this.anomalySubject.value;
-    const updatedAnomalies = currentAnomalies.filter((anomaly) => anomaly.id !== anomalyId);
+    const updatedAnomalies = currentAnomalies.filter(anomaly => anomaly.id !== anomalyId);
     this.anomalySubject.next(updatedAnomalies);
     return currentAnomalies.length !== updatedAnomalies.length;
   }
@@ -765,10 +686,7 @@ export class MLAnalyticsService implements OnModuleInit {
       optimizationSuggestions: this.optimizationSubject.value.length,
       predictiveInsights: this.predictionSubject.value.length,
       activeAlerts: this.alertSubject.value.length,
-      dataHistorySize: Array.from(this.dataHistory.values()).reduce(
-        (sum, arr) => sum + arr.length,
-        0,
-      ),
+      dataHistorySize: Array.from(this.dataHistory.values()).reduce((sum, arr) => sum + arr.length, 0)
     };
   }
 }

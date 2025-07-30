@@ -1,6 +1,6 @@
-# 🚀 NestJS Telescope v12.0.0
+# 🚀 NestJS Telescope v1.0.0
 
-**Advanced observability and monitoring solution for NestJS applications with ML-powered analytics, enterprise features, and production-ready scaling.**
+**Advanced observability and monitoring solution for NestJS applications with ML-powered analytics, **enterprise** features, and production-ready scaling.**
 
 [![NPM Version][npm-image]][npm-url]
 [![NPM Downloads][downloads-image]][downloads-url]
@@ -47,8 +47,55 @@
 
 ## 📦 Installation
 
+### Prerequisites
+
+- Node.js >= 18.0.0
+- npm >= 8.0.0
+- NestJS >= 10.0.0
+
+### Install the Package
+
 ```bash
-npm install @nestjs/telescope
+npm install ahmedhegazee/nestjs-telescope
+```
+
+### Install Optional Dependencies
+
+For full functionality, install these optional dependencies:
+
+```bash
+# Database support
+npm install @nestjs/typeorm typeorm pg mysql2 sqlite3
+
+# Job queue support
+npm install @nestjs/bull bull
+
+# Cache support
+npm install redis
+
+# Security features
+npm install bcryptjs jsonwebtoken passport passport-jwt passport-oauth2
+
+# Email notifications
+npm install nodemailer
+
+# Slack notifications
+npm install @slack/web-api
+
+# PDF generation
+npm install pdf-lib puppeteer
+
+# Excel export
+npm install exceljs
+
+# Compression
+npm install compression
+
+# Rate limiting
+npm install express-rate-limit express-slow-down
+
+# Security headers
+npm install helmet cors
 ```
 
 ## 🚀 Quick Start
@@ -57,7 +104,7 @@ npm install @nestjs/telescope
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { TelescopeModule } from '@nestjs/telescope';
+import { TelescopeModule } from 'ahmedhegazee/nestjs-telescope';
 
 @Module({
   imports: [
@@ -84,7 +131,7 @@ export class AppModule {}
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { TelescopeModule } from '@nestjs/telescope';
+import { TelescopeModule } from 'ahmedhegazee/nestjs-telescope';
 
 @Module({
   imports: [
@@ -101,6 +148,10 @@ import { TelescopeModule } from '@nestjs/telescope';
           database: 'telescope',
           username: 'user',
           password: 'password'
+        },
+        retention: {
+          hours: 24,
+          maxEntries: 10000
         }
       },
 
@@ -109,27 +160,34 @@ import { TelescopeModule } from '@nestjs/telescope';
         request: {
           enabled: true,
           sampling: 100, // 100% sampling
-          maskSensitiveData: true
+          maskSensitiveData: true,
+          excludePaths: ['/health', '/metrics'],
+          logSuccessfulResponseBodies: false
         },
         query: {
           enabled: true,
           slowQueryThreshold: 1000, // 1 second
-          connectionPoolMonitoring: true
+          connectionPoolMonitoring: true,
+          enableQueryAnalysis: true
         },
         exception: {
           enabled: true,
           grouping: true,
-          stackTraceAnalysis: true
+          stackTraceAnalysis: true,
+          enableSourceMaps: true,
+          maxStackTraceDepth: 10
         },
         job: {
           enabled: true,
           queueMonitoring: true,
-          performanceTracking: true
+          performanceTracking: true,
+          enableJobHistory: true
         },
         cache: {
           enabled: true,
           hitRatioTracking: true,
-          memoryUsageMonitoring: true
+          memoryUsageMonitoring: true,
+          enableCacheAnalysis: true
         }
       },
 
@@ -139,7 +197,8 @@ import { TelescopeModule } from '@nestjs/telescope';
         anomalyDetection: true,
         performanceRegression: true,
         queryOptimization: true,
-        predictiveInsights: true
+        predictiveInsights: true,
+        dataRetention: 30 // days
       },
 
       // Alerting Configuration
@@ -185,11 +244,52 @@ import { TelescopeModule } from '@nestjs/telescope';
           strategy: 'database',
           databasePrefix: 'telescope_'
         }
+      },
+
+      // DevTools Integration
+      devtools: {
+        enabled: true,
+        port: 3001,
+        features: {
+          dependencyGraph: true,
+          interactivePlayground: true,
+          performanceMetrics: true
+        }
       }
     })
   ]
 })
 export class AppModule {}
+```
+
+### 3. Environment Variables
+
+Create a `.env` file in your project root:
+
+```env
+# Telescope Configuration
+TELESCOPE_ENABLED=true
+TELESCOPE_STORAGE_DRIVER=database
+TELESCOPE_STORAGE_DATABASE_URL=postgresql://user:pass@localhost:5432/telescope
+
+# Security
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=1h
+
+# Email Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# Slack Configuration
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
+
+# Database Configuration
+DATABASE_URL=postgresql://user:pass@localhost:5432/telescope
 ```
 
 ## 📊 Dashboard
@@ -209,7 +309,7 @@ Access the Telescope dashboard at `http://localhost:3000/telescope` to view:
 
 #### TelescopeService
 ```typescript
-import { TelescopeService } from '@nestjs/telescope';
+import { TelescopeService } from 'ahmedhegazee/nestjs-telescope';
 
 @Injectable()
 export class MyService {
@@ -222,12 +322,16 @@ export class MyService {
   async findEntries(filter: TelescopeFilter) {
     return await this.telescopeService.find(filter);
   }
+
+  async getMetrics() {
+    return await this.telescopeService.getMetrics();
+  }
 }
 ```
 
 #### MLAnalyticsService
 ```typescript
-import { MLAnalyticsService } from '@nestjs/telescope';
+import { MLAnalyticsService } from 'ahmedhegazee/nestjs-telescope';
 
 @Injectable()
 export class AnalyticsService {
@@ -240,12 +344,16 @@ export class AnalyticsService {
   async getPredictiveInsights() {
     return await this.mlAnalytics.getPredictiveInsights();
   }
+
+  async getQueryOptimizations() {
+    return await this.mlAnalytics.getQueryOptimizations();
+  }
 }
 ```
 
 #### AutomatedAlertingService
 ```typescript
-import { AutomatedAlertingService } from '@nestjs/telescope';
+import { AutomatedAlertingService } from 'ahmedhegazee/nestjs-telescope';
 
 @Injectable()
 export class AlertService {
@@ -253,6 +361,10 @@ export class AlertService {
 
   async createAlert(alert: AlertRule) {
     return await this.alerting.createAlert(alert);
+  }
+
+  async getAlertHistory() {
+    return await this.alerting.getAlertHistory();
   }
 }
 ```
@@ -287,61 +399,99 @@ DELETE /telescope/alerts/:id
 ### Multi-Tenant Support
 
 ```typescript
-// Tenant provisioning
-const tenant = await multiTenantService.provisionTenant({
-  name: 'Acme Corp',
-  slug: 'acme-corp',
-  plan: 'enterprise',
-  metadata: {
-    industry: 'technology',
-    size: 'enterprise'
-  }
-});
+import { MultiTenantService } from 'ahmedhegazee/nestjs-telescope';
 
-// Tenant-specific configuration
-await multiTenantService.updateTenantConfiguration(tenant.id, {
-  features: {
-    mlAnalytics: true,
-    alerting: true
-  },
-  settings: {
-    dataRetention: 365,
-    samplingRate: 100
+@Injectable()
+export class TenantService {
+  constructor(private multiTenantService: MultiTenantService) {}
+
+  async createTenant() {
+    // Tenant provisioning
+    const tenant = await this.multiTenantService.provisionTenant({
+      name: 'Acme Corp',
+      slug: 'acme-corp',
+      plan: 'enterprise',
+      metadata: {
+        industry: 'technology',
+        size: 'enterprise'
+      }
+    });
+
+    // Tenant-specific configuration
+    await this.multiTenantService.updateTenantConfiguration(tenant.id, {
+      features: {
+        mlAnalytics: true,
+        alerting: true
+      },
+      settings: {
+        dataRetention: 365,
+        samplingRate: 100
+      }
+    });
+
+    return tenant;
   }
-});
+}
 ```
 
 ### Advanced Security
 
 ```typescript
-// Authentication
-const authResult = await securityService.authenticate({
-  method: 'oauth2',
-  code: 'authorization_code'
-});
+import { EnterpriseSecurityService } from 'ahmedhegazee/nestjs-telescope';
 
-// Authorization
-const authzResult = await securityService.authorize(
-  userId,
-  'read',
-  'telescope:analytics',
-  { ipAddress: '192.168.1.1' }
-);
+@Injectable()
+export class SecurityService {
+  constructor(private securityService: EnterpriseSecurityService) {}
 
-// Compliance monitoring
-const compliance = await securityService.generateComplianceReport();
+  async authenticate() {
+    // Authentication
+    const authResult = await this.securityService.authenticate({
+      method: 'oauth2',
+      code: 'authorization_code'
+    });
+
+    return authResult;
+  }
+
+  async authorize(userId: string, action: string, resource: string) {
+    // Authorization
+    const authzResult = await this.securityService.authorize(
+      userId,
+      action,
+      resource,
+      { ipAddress: '192.168.1.1' }
+    );
+
+    return authzResult;
+  }
+
+  async getComplianceReport() {
+    // Compliance monitoring
+    const compliance = await this.securityService.generateComplianceReport();
+    return compliance;
+  }
+}
 ```
 
 ### Custom Branding
 
 ```typescript
-await multiTenantService.updateTenantBranding(tenantId, {
-  logo: 'https://example.com/logo.png',
-  primaryColor: '#007bff',
-  secondaryColor: '#6c757d',
-  companyName: 'Acme Corporation',
-  theme: 'dark'
-});
+import { MultiTenantService } from 'ahmedhegazee/nestjs-telescope';
+
+@Injectable()
+export class BrandingService {
+  constructor(private multiTenantService: MultiTenantService) {}
+
+  async updateBranding(tenantId: string) {
+    await this.multiTenantService.updateTenantBranding(tenantId, {
+      logo: 'https://example.com/logo.png',
+      primaryColor: '#007bff',
+      secondaryColor: '#6c757d',
+      companyName: 'Acme Corporation',
+      theme: 'dark'
+    });
+  }
+}
 ```
 
 ## ⚡ Performance & Scaling
@@ -349,49 +499,82 @@ await multiTenantService.updateTenantBranding(tenantId, {
 ### Horizontal Scaling
 
 ```typescript
-// Enable horizontal scaling
-const scalingConfig = {
-  enabled: true,
-  clusterMode: true,
-  discovery: {
-    method: 'redis',
-    interval: 30000
-  },
-  loadBalancing: {
-    strategy: 'least-loaded',
-    healthCheckInterval: 10000
+import { HorizontalScalingService } from 'ahmedhegazee/nestjs-telescope';
+
+@Injectable()
+export class ScalingService {
+  constructor(private scalingService: HorizontalScalingService) {}
+
+  async configureScaling() {
+    // Enable horizontal scaling
+    const scalingConfig = {
+      enabled: true,
+      clusterMode: true,
+      discovery: {
+        method: 'redis',
+        interval: 30000
+      },
+      loadBalancing: {
+        strategy: 'least-loaded',
+        healthCheckInterval: 10000
+      }
+    };
+
+    return scalingConfig;
   }
-};
+}
 ```
 
 ### Advanced Caching
 
 ```typescript
-// Multi-tier caching
-const cacheConfig = {
-  tiers: {
-    l1: { type: 'memory', maxSize: 100, ttl: 300000 },
-    l2: { type: 'redis', ttl: 3600000 },
-    l3: { type: 'database', ttl: 86400000 }
-  },
-  strategies: {
-    writePolicy: 'write-through',
-    readPolicy: 'read-through',
-    evictionPolicy: 'lru'
+import { AdvancedCachingService } from 'ahmedhegazee/nestjs-telescope';
+
+@Injectable()
+export class CacheService {
+  constructor(private cacheService: AdvancedCachingService) {}
+
+  async configureCaching() {
+    // Multi-tier caching
+    const cacheConfig = {
+      tiers: {
+        l1: { type: 'memory', maxSize: 100, ttl: 300000 },
+        l2: { type: 'redis', ttl: 3600000 },
+        l3: { type: 'database', ttl: 86400000 }
+      },
+      strategies: {
+        writePolicy: 'write-through',
+        readPolicy: 'read-through',
+        evictionPolicy: 'lru'
+      }
+    };
+
+    return cacheConfig;
   }
-};
+}
 ```
 
 ### Database Optimization
 
 ```typescript
-// Query optimization
-const optimization = await dbOptimizer.optimizeQuery(`
-  SELECT * FROM users WHERE email = 'user@example.com'
-`);
+import { DatabaseOptimizerService } from 'ahmedhegazee/nestjs-telescope';
 
-// Index suggestions
-const suggestions = await dbOptimizer.getIndexSuggestions();
+@Injectable()
+export class DatabaseService {
+  constructor(private dbOptimizer: DatabaseOptimizerService) {}
+
+  async optimizeQuery(query: string) {
+    // Query optimization
+    const optimization = await this.dbOptimizer.optimizeQuery(query);
+    return optimization;
+  }
+
+  async getIndexSuggestions() {
+    // Index suggestions
+    const suggestions = await this.dbOptimizer.getIndexSuggestions();
+    return suggestions;
+  }
+}
 ```
 
 ## 🧪 Testing
@@ -622,7 +805,7 @@ const maskedData = {
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
-import { TelescopeService } from '@nestjs/telescope';
+import { TelescopeService } from 'ahmedhegazee/nestjs-telescope';
 
 @Controller('users')
 export class UsersController {
@@ -640,7 +823,7 @@ export class UsersController {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Watcher, TelescopeEntry } from '@nestjs/telescope';
+import { Watcher, TelescopeEntry } from 'ahmedhegazee/nestjs-telescope';
 
 @Injectable()
 export class CustomWatcher implements Watcher {
@@ -655,7 +838,7 @@ export class CustomWatcher implements Watcher {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { MLAnalyticsService } from '@nestjs/telescope';
+import { MLAnalyticsService } from 'ahmedhegazee/nestjs-telescope';
 
 @Injectable()
 export class AnalyticsService {
@@ -674,7 +857,7 @@ export class AnalyticsService {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { AutomatedAlertingService } from '@nestjs/telescope';
+import { AutomatedAlertingService } from 'ahmedhegazee/nestjs-telescope';
 
 @Injectable()
 export class AlertService {
@@ -699,8 +882,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Clone the repository
-git clone https://github.com/nestjs/telescope.git
-cd telescope
+git clone https://github.com/ahmedhegazee/nestjs-telescope.git
+cd nestjs-telescope
 
 # Install dependencies
 npm install
@@ -736,22 +919,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 Email: telescope@nestjs.com
+- 📧 Email: ahmedhegazy@example.com
 - 💬 Discord: [NestJS Community](https://discord.gg/nestjs)
-- 🐛 Issues: [GitHub Issues](https://github.com/nestjs/telescope/issues)
-- 📖 Documentation: [https://nestjs.com/telescope](https://nestjs.com/telescope)
+- 🐛 Issues: [GitHub Issues](https://github.com/ahmedhegazee/nestjs-telescope/issues)
+- 📖 Documentation: [https://github.com/ahmedhegazee/nestjs-telescope](https://github.com/ahmedhegazee/nestjs-telescope)
 
 ---
 
-**Made with ❤️ by the NestJS Team**
+**Made with ❤️ by Ahmed Hegazy**
 
-[npm-image]: https://img.shields.io/npm/v/@nestjs/telescope.svg
-[npm-url]: https://npmjs.org/package/@nestjs/telescope
-[downloads-image]: https://img.shields.io/npm/dm/@nestjs/telescope.svg
-[downloads-url]: https://npmjs.org/package/@nestjs/telescope
-[build-image]: https://img.shields.io/github/actions/workflow/status/nestjs/telescope/ci.yml
-[build-url]: https://github.com/nestjs/telescope/actions
-[coverage-image]: https://img.shields.io/codecov/c/github/nestjs/telescope
-[coverage-url]: https://codecov.io/gh/nestjs/telescope
-[license-image]: https://img.shields.io/npm/l/@nestjs/telescope.svg
-[license-url]: https://github.com/nestjs/telescope/blob/main/LICENSE
+[npm-image]: https://img.shields.io/npm/v/ahmedhegazee/nestjs-telescope.svg
+[npm-url]: https://npmjs.org/package/ahmedhegazee/nestjs-telescope
+[downloads-image]: https://img.shields.io/npm/dm/ahmedhegazee/nestjs-telescope.svg
+[downloads-url]: https://npmjs.org/package/ahmedhegazee/nestjs-telescope
+[build-image]: https://img.shields.io/github/actions/workflow/status/ahmedhegazee/nestjs-telescope/ci.yml
+[build-url]: https://github.com/ahmedhegazee/nestjs-telescope/actions
+[coverage-image]: https://img.shields.io/codecov/c/github/ahmedhegazee/nestjs-telescope
+[coverage-url]: https://codecov.io/gh/ahmedhegazee/nestjs-telescope
+[license-image]: https://img.shields.io/npm/l/ahmedhegazee/nestjs-telescope.svg
+[license-url]: https://github.com/ahmedhegazee/nestjs-telescope/blob/main/LICENSE

@@ -1,15 +1,15 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Observable, Subject, interval, Subscription } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
-import { TelescopeEntry } from '../interfaces/telescope-entry.interface';
-import { TelescopeConfig } from '../interfaces/telescope-config.interface';
-import { Inject } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Observable, Subject, interval } from "rxjs";
+import { map, filter, debounceTime } from "rxjs/operators";
+import { TelescopeEntry } from "../interfaces/telescope-entry.interface";
+import { TelescopeConfig } from "../interfaces/telescope-config.interface";
+import { Inject } from "@nestjs/common";
 
 export interface ScalingNode {
   id: string;
   hostname: string;
   port: number;
-  status: 'active' | 'inactive' | 'unhealthy';
+  status: "active" | "inactive" | "unhealthy";
   load: number; // 0-100
   memoryUsage: number;
   cpuUsage: number;
@@ -23,12 +23,12 @@ export interface ScalingConfig {
   clusterMode: boolean;
   nodeId: string;
   discovery: {
-    method: 'redis' | 'consul' | 'kubernetes' | 'manual';
+    method: "redis" | "consul" | "kubernetes" | "manual";
     interval: number; // ms
     timeout: number; // ms
   };
   loadBalancing: {
-    strategy: 'round-robin' | 'least-loaded' | 'consistent-hash' | 'random';
+    strategy: "round-robin" | "least-loaded" | "consistent-hash" | "random";
     healthCheckInterval: number; // ms
     failoverEnabled: boolean;
   };
@@ -36,10 +36,10 @@ export interface ScalingConfig {
     sharding: boolean;
     shardKey: string; // 'timestamp' | 'type' | 'hash'
     replicationFactor: number;
-    consistencyLevel: 'eventual' | 'strong' | 'quorum';
+    consistencyLevel: "eventual" | "strong" | "quorum";
   };
   communication: {
-    protocol: 'http' | 'grpc' | 'redis-pubsub';
+    protocol: "http" | "grpc" | "redis-pubsub";
     timeout: number; // ms
     retries: number;
     compression: boolean;
@@ -77,32 +77,33 @@ export class HorizontalScalingService implements OnModuleInit {
   private readonly nodeSubject = new Subject<ScalingNode>();
   private readonly healthSubject = new Subject<ClusterHealth>();
   private readonly loadBalancer = new Map<string, ScalingNode[]>();
-  private readonly loadBalancerCounters = new Map<string, number>();
   private readonly nodeLoadHistory = new Map<string, number[]>();
   private readonly config: ScalingConfig;
   private readonly localNode: ScalingNode;
-  private heartbeatInterval: Subscription | null = null;
-  private discoveryInterval: Subscription | null = null;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private discoveryInterval: NodeJS.Timeout | null = null;
 
   constructor(
-    @Inject('TELESCOPE_CONFIG')
-    private readonly telescopeConfig: TelescopeConfig,
+    @Inject("TELESCOPE_CONFIG")
+    private readonly telescopeConfig: TelescopeConfig
   ) {
     this.config =
-      (this.telescopeConfig.scaling as unknown as ScalingConfig) || this.getDefaultScalingConfig();
+      this.telescopeConfig.scaling || this.getDefaultScalingConfig();
     this.localNode = this.createLocalNode();
   }
 
   async onModuleInit(): Promise<void> {
     if (!this.config.enabled) {
-      this.logger.log('Horizontal scaling disabled');
+      this.logger.log("Horizontal scaling disabled");
       return;
     }
 
     await this.initializeScaling();
     this.startHeartbeat();
     this.startDiscovery();
-    this.logger.log(`Horizontal scaling initialized for node: ${this.localNode.id}`);
+    this.logger.log(
+      `Horizontal scaling initialized for node: ${this.localNode.id}`
+    );
   }
 
   private getDefaultScalingConfig(): ScalingConfig {
@@ -111,23 +112,23 @@ export class HorizontalScalingService implements OnModuleInit {
       clusterMode: false,
       nodeId: `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       discovery: {
-        method: 'redis',
+        method: "redis",
         interval: 30000, // 30 seconds
         timeout: 5000, // 5 seconds
       },
       loadBalancing: {
-        strategy: 'least-loaded',
+        strategy: "least-loaded",
         healthCheckInterval: 10000, // 10 seconds
         failoverEnabled: true,
       },
       dataDistribution: {
         sharding: false,
-        shardKey: 'timestamp',
+        shardKey: "timestamp",
         replicationFactor: 1,
-        consistencyLevel: 'eventual',
+        consistencyLevel: "eventual",
       },
       communication: {
-        protocol: 'http',
+        protocol: "http",
         timeout: 5000,
         retries: 3,
         compression: true,
@@ -138,15 +139,15 @@ export class HorizontalScalingService implements OnModuleInit {
   private createLocalNode(): ScalingNode {
     return {
       id: this.config.nodeId,
-      hostname: process.env.HOSTNAME || 'localhost',
+      hostname: process.env.HOSTNAME || "localhost",
       port: parseInt(process.env.PORT) || 3000,
-      status: 'active',
+      status: "active",
       load: 0,
       memoryUsage: 0,
       cpuUsage: 0,
       lastHeartbeat: new Date(),
-      capabilities: ['telescope', 'analytics', 'ml', 'alerting'],
-      version: '10.0.0',
+      capabilities: ["telescope", "analytics", "ml", "alerting"],
+      version: "10.0.0",
     };
   }
 
@@ -164,7 +165,7 @@ export class HorizontalScalingService implements OnModuleInit {
 
   private initializeLoadBalancer(): void {
     // Initialize load balancer for different entry types
-    const entryTypes = ['request', 'query', 'exception', 'job', 'cache'];
+    const entryTypes = ["request", "query", "exception", "job", "cache"];
     entryTypes.forEach((type) => {
       this.loadBalancer.set(type, [this.localNode]);
     });
@@ -178,10 +179,12 @@ export class HorizontalScalingService implements OnModuleInit {
   }
 
   private startDiscovery(): void {
-    this.discoveryInterval = interval(this.config.discovery.interval).subscribe(async () => {
-      await this.discoverNodes();
-      await this.cleanupInactiveNodes();
-    });
+    this.discoveryInterval = interval(this.config.discovery.interval).subscribe(
+      async () => {
+        await this.discoverNodes();
+        await this.cleanupInactiveNodes();
+      }
+    );
   }
 
   private async sendHeartbeat(): Promise<void> {
@@ -246,13 +249,13 @@ export class HorizontalScalingService implements OnModuleInit {
   private async broadcastHeartbeat(): Promise<void> {
     // Implementation depends on communication protocol
     switch (this.config.communication.protocol) {
-      case 'redis-pubsub':
+      case "redis-pubsub":
         await this.broadcastViaRedis();
         break;
-      case 'http':
+      case "http":
         await this.broadcastViaHttp();
         break;
-      case 'grpc':
+      case "grpc":
         await this.broadcastViaGrpc();
         break;
     }
@@ -261,7 +264,7 @@ export class HorizontalScalingService implements OnModuleInit {
   private async broadcastViaRedis(): Promise<void> {
     // Redis pub/sub implementation
     // This would use Redis to broadcast heartbeat to other nodes
-    this.logger.debug('Broadcasting heartbeat via Redis');
+    this.logger.debug("Broadcasting heartbeat via Redis");
   }
 
   private async broadcastViaHttp(): Promise<void> {
@@ -270,15 +273,13 @@ export class HorizontalScalingService implements OnModuleInit {
       if (node.id === this.localNode.id) continue;
 
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.config.communication.timeout);
-
-        const response = await fetch(`http://${node.hostname}:${node.port}/telescope/health`, {
-          method: 'GET',
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
+        const response = await fetch(
+          `http://${node.hostname}:${node.port}/telescope/health`,
+          {
+            method: "GET",
+            timeout: this.config.communication.timeout,
+          }
+        );
 
         if (response.ok) {
           const healthData = await response.json();
@@ -295,21 +296,21 @@ export class HorizontalScalingService implements OnModuleInit {
 
   private async broadcastViaGrpc(): Promise<void> {
     // gRPC-based communication
-    this.logger.debug('Broadcasting heartbeat via gRPC');
+    this.logger.debug("Broadcasting heartbeat via gRPC");
   }
 
   private async discoverNodes(): Promise<void> {
     switch (this.config.discovery.method) {
-      case 'redis':
+      case "redis":
         await this.discoverNodesViaRedis();
         break;
-      case 'consul':
+      case "consul":
         await this.discoverNodesViaConsul();
         break;
-      case 'kubernetes':
+      case "kubernetes":
         await this.discoverNodesViaKubernetes();
         break;
-      case 'manual':
+      case "manual":
         // Manual node configuration
         break;
     }
@@ -317,24 +318,24 @@ export class HorizontalScalingService implements OnModuleInit {
 
   private async discoverNodesViaRedis(): Promise<void> {
     // Redis-based service discovery
-    this.logger.debug('Discovering nodes via Redis');
+    this.logger.debug("Discovering nodes via Redis");
   }
 
   private async discoverNodesViaConsul(): Promise<void> {
     // Consul-based service discovery
-    this.logger.debug('Discovering nodes via Consul');
+    this.logger.debug("Discovering nodes via Consul");
   }
 
   private async discoverNodesViaKubernetes(): Promise<void> {
     // Kubernetes-based service discovery
-    this.logger.debug('Discovering nodes via Kubernetes');
+    this.logger.debug("Discovering nodes via Kubernetes");
   }
 
   private updateNodeHealth(nodeId: string, healthData: any): void {
     const node = this.nodes.get(nodeId);
     if (!node) return;
 
-    node.status = 'active';
+    node.status = "active";
     node.load = healthData.load || 0;
     node.memoryUsage = healthData.memoryUsage || 0;
     node.cpuUsage = healthData.cpuUsage || 0;
@@ -348,7 +349,7 @@ export class HorizontalScalingService implements OnModuleInit {
     const node = this.nodes.get(nodeId);
     if (!node) return;
 
-    node.status = 'unhealthy';
+    node.status = "unhealthy";
     this.nodes.set(nodeId, node);
     this.nodeSubject.next(node);
   }
@@ -381,7 +382,7 @@ export class HorizontalScalingService implements OnModuleInit {
     if (!this.config.enabled) {
       return {
         targetNode: this.localNode,
-        strategy: 'local',
+        strategy: "local",
         loadFactor: 0,
         latency: 0,
       };
@@ -401,35 +402,40 @@ export class HorizontalScalingService implements OnModuleInit {
 
   private async selectTargetNode(entryType: string): Promise<ScalingNode> {
     const availableNodes = this.loadBalancer.get(entryType) || [this.localNode];
-    const activeNodes = availableNodes.filter((node) => node.status === 'active');
+    const activeNodes = availableNodes.filter(
+      (node) => node.status === "active"
+    );
 
     if (activeNodes.length === 0) {
       return this.localNode;
     }
 
     switch (this.config.loadBalancing.strategy) {
-      case 'round-robin':
+      case "round-robin":
         return this.roundRobinSelection(activeNodes, entryType);
-      case 'least-loaded':
+      case "least-loaded":
         return this.leastLoadedSelection(activeNodes);
-      case 'consistent-hash':
+      case "consistent-hash":
         return this.consistentHashSelection(activeNodes, entryType);
-      case 'random':
+      case "random":
         return this.randomSelection(activeNodes);
       default:
         return this.leastLoadedSelection(activeNodes);
     }
   }
 
-  private roundRobinSelection(nodes: ScalingNode[], entryType: string): ScalingNode {
+  private roundRobinSelection(
+    nodes: ScalingNode[],
+    entryType: string
+  ): ScalingNode {
     const index = (this.getRoundRobinIndex(entryType) || 0) % nodes.length;
     return nodes[index];
   }
 
   private getRoundRobinIndex(entryType: string): number {
     // Simple round-robin counter per entry type
-    const counter = this.loadBalancerCounters.get(`${entryType}_counter`) || 0;
-    this.loadBalancerCounters.set(`${entryType}_counter`, counter + 1);
+    const counter = this.loadBalancer.get(`${entryType}_counter`) || 0;
+    this.loadBalancer.set(`${entryType}_counter`, counter + 1);
     return counter;
   }
 
@@ -437,7 +443,10 @@ export class HorizontalScalingService implements OnModuleInit {
     return nodes.reduce((min, node) => (node.load < min.load ? node : min));
   }
 
-  private consistentHashSelection(nodes: ScalingNode[], entryType: string): ScalingNode {
+  private consistentHashSelection(
+    nodes: ScalingNode[],
+    entryType: string
+  ): ScalingNode {
     // Simple hash-based selection
     const hash = this.hashString(entryType);
     const index = hash % nodes.length;
@@ -466,15 +475,10 @@ export class HorizontalScalingService implements OnModuleInit {
 
     const start = Date.now();
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1000);
-
       await fetch(`http://${node.hostname}:${node.port}/telescope/health`, {
-        method: 'GET',
-        signal: controller.signal,
+        method: "GET",
+        timeout: 1000,
       });
-
-      clearTimeout(timeoutId);
       return Date.now() - start;
     } catch (error) {
       return 9999; // High latency for failed nodes
@@ -483,12 +487,15 @@ export class HorizontalScalingService implements OnModuleInit {
 
   async getClusterHealth(): Promise<ClusterHealth> {
     const allNodes = Array.from(this.nodes.values());
-    const activeNodes = allNodes.filter((node) => node.status === 'active');
-    const unhealthyNodes = allNodes.filter((node) => node.status === 'unhealthy');
+    const activeNodes = allNodes.filter((node) => node.status === "active");
+    const unhealthyNodes = allNodes.filter(
+      (node) => node.status === "unhealthy"
+    );
 
     const averageLoad =
       activeNodes.length > 0
-        ? activeNodes.reduce((sum, node) => sum + node.load, 0) / activeNodes.length
+        ? activeNodes.reduce((sum, node) => sum + node.load, 0) /
+          activeNodes.length
         : 0;
 
     const dataDistribution = this.analyzeDataDistribution();
@@ -504,10 +511,12 @@ export class HorizontalScalingService implements OnModuleInit {
     };
   }
 
-  private analyzeDataDistribution(): ClusterHealth['dataDistribution'] {
+  private analyzeDataDistribution(): ClusterHealth["dataDistribution"] {
     const loads = Array.from(this.nodes.values()).map((node) => node.load);
     const mean = loads.reduce((sum, load) => sum + load, 0) / loads.length;
-    const variance = loads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) / loads.length;
+    const variance =
+      loads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) /
+      loads.length;
     const standardDeviation = Math.sqrt(variance);
 
     const balanced = standardDeviation < 20; // Less than 20% variance
@@ -515,10 +524,14 @@ export class HorizontalScalingService implements OnModuleInit {
 
     if (!balanced) {
       if (standardDeviation > 50) {
-        recommendations.push('High load variance detected. Consider rebalancing cluster.');
+        recommendations.push(
+          "High load variance detected. Consider rebalancing cluster."
+        );
       }
       if (loads.some((load) => load > 80)) {
-        recommendations.push('Some nodes are heavily loaded. Consider adding more nodes.');
+        recommendations.push(
+          "Some nodes are heavily loaded. Consider adding more nodes."
+        );
       }
     }
 
@@ -529,7 +542,9 @@ export class HorizontalScalingService implements OnModuleInit {
     };
   }
 
-  private async measureClusterPerformance(): Promise<ClusterHealth['performance']> {
+  private async measureClusterPerformance(): Promise<
+    ClusterHealth["performance"]
+  > {
     // Measure cluster-wide performance metrics
     const responseTimes: number[] = [];
     const throughput = this.calculateThroughput();
@@ -538,7 +553,8 @@ export class HorizontalScalingService implements OnModuleInit {
     return {
       averageResponseTime:
         responseTimes.length > 0
-          ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+          ? responseTimes.reduce((sum, time) => sum + time, 0) /
+            responseTimes.length
           : 0,
       throughput,
       errorRate,
@@ -570,7 +586,9 @@ export class HorizontalScalingService implements OnModuleInit {
   }
 
   getActiveNodes(): ScalingNode[] {
-    return Array.from(this.nodes.values()).filter((node) => node.status === 'active');
+    return Array.from(this.nodes.values()).filter(
+      (node) => node.status === "active"
+    );
   }
 
   getNodeById(nodeId: string): ScalingNode | undefined {
@@ -598,11 +616,11 @@ export class HorizontalScalingService implements OnModuleInit {
       await this.notifyShutdown();
     }
 
-    this.logger.log('Horizontal scaling service shutdown');
+    this.logger.log("Horizontal scaling service shutdown");
   }
 
   private async notifyShutdown(): Promise<void> {
     // Notify other nodes that this node is shutting down
-    this.logger.debug('Notifying other nodes about shutdown');
+    this.logger.debug("Notifying other nodes about shutdown");
   }
 }

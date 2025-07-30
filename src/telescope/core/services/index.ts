@@ -16,3 +16,10 @@ export { DatabaseOptimizerService } from './database-optimizer.service';
 export { MemoryOptimizerService } from './memory-optimizer.service';
 export { EnterpriseSecurityService } from './enterprise-security.service';
 export { MultiTenantService } from './multi-tenant.service';
+
+// Enhanced Services (new implementations)
+export { DataMaskingService } from './data-masking.service';
+export { EnhancedCircuitBreakerService } from './enhanced-circuit-breaker.service';
+export { EnhancedMemoryManagerService } from './enhanced-memory-manager.service';
+export { AdaptiveSamplingService } from './adaptive-sampling.service';
+export { BufferedEntryManagerService } from './buffered-entry-manager.service';

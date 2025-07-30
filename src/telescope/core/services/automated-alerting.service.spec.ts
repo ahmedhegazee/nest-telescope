@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { of } from 'rxjs';
-import { AutomatedAlertingService, AlertChannel, AlertRule, MLAlert } from './automated-alerting.service';
+import { AutomatedAlertingService, AlertChannel, AlertRule } from './automated-alerting.service';
+import { MLAlert } from './ml-analytics.service';
 import { MLAnalyticsService } from './ml-analytics.service';
 import { AnalyticsService } from './analytics.service';
+import { MemoryManagerService } from './memory-manager.service';
 
 describe('AutomatedAlertingService', () => {
   let service: AutomatedAlertingService;
@@ -22,17 +24,17 @@ describe('AutomatedAlertingService', () => {
     triggeredBy: {
       value: 500,
       threshold: 250,
-      confidence: 0.8
+      confidence: 0.8,
     },
     actions: [
       {
         type: 'investigate',
         description: 'Investigate the issue',
         priority: 1,
-        automated: false
-      }
+        automated: false,
+      },
     ],
-    relatedInsights: []
+    relatedInsights: [],
   };
 
   beforeEach(async () => {
@@ -41,7 +43,7 @@ describe('AutomatedAlertingService', () => {
       getAnomalies: jest.fn().mockReturnValue(of([])),
       getRegressionAnalysis: jest.fn().mockReturnValue(of([])),
       getPredictiveInsights: jest.fn().mockReturnValue(of([])),
-      acknowledgeAlert: jest.fn().mockReturnValue(true)
+      acknowledgeAlert: jest.fn().mockReturnValue(true),
     };
 
     const mockAnalyticsService = {
@@ -49,9 +51,24 @@ describe('AutomatedAlertingService', () => {
         overview: {
           totalRequests: 1000,
           averageResponseTime: 250,
-          errorRate: 0.05
-        }
-      })
+          errorRate: 0.05,
+        },
+      }),
+    };
+
+    const mockMemoryManagerService = {
+      createCollection: jest.fn().mockReturnValue({
+        add: jest.fn(),
+        get: jest.fn(),
+        remove: jest.fn(),
+        clear: jest.fn(),
+      }),
+      getCollection: jest.fn().mockReturnValue({
+        add: jest.fn(),
+        get: jest.fn(),
+        remove: jest.fn(),
+        clear: jest.fn(),
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -59,11 +76,15 @@ describe('AutomatedAlertingService', () => {
         AutomatedAlertingService,
         {
           provide: MLAnalyticsService,
-          useValue: mockMLAnalyticsService
+          useValue: mockMLAnalyticsService,
         },
         {
           provide: AnalyticsService,
-          useValue: mockAnalyticsService
+          useValue: mockAnalyticsService,
+        },
+        {
+          provide: MemoryManagerService,
+          useValue: mockMemoryManagerService,
         },
         {
           provide: Logger,
@@ -71,15 +92,19 @@ describe('AutomatedAlertingService', () => {
             log: jest.fn(),
             warn: jest.fn(),
             error: jest.fn(),
-            debug: jest.fn()
-          }
-        }
-      ]
+            debug: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<AutomatedAlertingService>(AutomatedAlertingService);
-    mlAnalyticsService = module.get<MLAnalyticsService>(MLAnalyticsService) as jest.Mocked<MLAnalyticsService>;
-    analyticsService = module.get<AnalyticsService>(AnalyticsService) as jest.Mocked<AnalyticsService>;
+    mlAnalyticsService = module.get<MLAnalyticsService>(
+      MLAnalyticsService,
+    ) as jest.Mocked<MLAnalyticsService>;
+    analyticsService = module.get<AnalyticsService>(
+      AnalyticsService,
+    ) as jest.Mocked<AnalyticsService>;
   });
 
   it('should be defined', () => {
@@ -101,14 +126,14 @@ describe('AutomatedAlertingService', () => {
         type: 'webhook',
         enabled: true,
         config: {
-          url: 'http://test.com/webhook'
+          url: 'http://test.com/webhook',
         },
-        severityFilter: ['warning', 'error', 'critical']
+        severityFilter: ['warning', 'error', 'critical'],
       };
 
       service.addAlertChannel(channel);
       const channels = service.getAlertChannels();
-      
+
       expect(channels).toContainEqual(channel);
     });
 
@@ -119,16 +144,16 @@ describe('AutomatedAlertingService', () => {
         type: 'webhook',
         enabled: true,
         config: {
-          url: 'http://test.com/webhook'
+          url: 'http://test.com/webhook',
         },
-        severityFilter: ['warning', 'error', 'critical']
+        severityFilter: ['warning', 'error', 'critical'],
       };
 
       service.addAlertChannel(channel);
       const removed = service.removeAlertChannel('test-channel');
-      
+
       expect(removed).toBe(true);
-      
+
       const channels = service.getAlertChannels();
       expect(channels).not.toContainEqual(channel);
     });
@@ -157,17 +182,17 @@ describe('AutomatedAlertingService', () => {
             metric: 'response_time',
             operator: '>',
             threshold: 1000,
-            component: 'application'
-          }
+            component: 'application',
+          },
         ],
         actions: {
-          channelIds: ['default-webhook']
-        }
+          channelIds: ['default-webhook'],
+        },
       };
 
       service.addAlertRule(rule);
       const rules = service.getAlertRules();
-      
+
       expect(rules).toContainEqual(rule);
     });
 
@@ -182,19 +207,19 @@ describe('AutomatedAlertingService', () => {
           {
             metric: 'response_time',
             operator: '>',
-            threshold: 1000
-          }
+            threshold: 1000,
+          },
         ],
         actions: {
-          channelIds: ['default-webhook']
-        }
+          channelIds: ['default-webhook'],
+        },
       };
 
       service.addAlertRule(rule);
       const removed = service.removeAlertRule('test-rule');
-      
+
       expect(removed).toBe(true);
-      
+
       const rules = service.getAlertRules();
       expect(rules).not.toContainEqual(rule);
     });
@@ -224,9 +249,9 @@ describe('AutomatedAlertingService', () => {
 
     it('should provide alert history stream', (done) => {
       const historyStream = service.getAlertHistoryStream();
-      
+
       // Subscribe and expect it to be defined
-      const subscription = historyStream.subscribe(historyEntry => {
+      const subscription = historyStream.subscribe((historyEntry) => {
         expect(historyEntry).toBeDefined();
         subscription.unsubscribe();
         done();
@@ -244,7 +269,7 @@ describe('AutomatedAlertingService', () => {
     it('should acknowledge alert successfully', () => {
       // First, we need to simulate an alert being sent to create history
       const result = service.acknowledgeAlert('test-alert-1');
-      
+
       // Since no alert history exists by default, this will return false
       // In a real scenario, alerts would be in history after being sent
       expect(typeof result).toBe('boolean');
@@ -259,7 +284,7 @@ describe('AutomatedAlertingService', () => {
   describe('Alert Metrics', () => {
     it('should return alert metrics', () => {
       const metrics = service.getAlertMetrics();
-      
+
       expect(metrics).toHaveProperty('totalAlerts');
       expect(metrics).toHaveProperty('alertsBySeverity');
       expect(metrics).toHaveProperty('alertsByComponent');
@@ -285,9 +310,9 @@ describe('AutomatedAlertingService', () => {
         type: 'webhook',
         enabled: true,
         config: {
-          url: 'console' // Special console URL for testing
+          url: 'console', // Special console URL for testing
         },
-        severityFilter: ['info', 'warning', 'error', 'critical']
+        severityFilter: ['info', 'warning', 'error', 'critical'],
       };
 
       service.addAlertChannel(channel);
@@ -297,8 +322,9 @@ describe('AutomatedAlertingService', () => {
     });
 
     it('should throw error for non-existent channel test', async () => {
-      await expect(service.testAlertChannel('non-existent'))
-        .rejects.toThrow('Channel not found: non-existent');
+      await expect(service.testAlertChannel('non-existent')).rejects.toThrow(
+        'Channel not found: non-existent',
+      );
     });
   });
 
@@ -306,9 +332,9 @@ describe('AutomatedAlertingService', () => {
     it('should have default channels configured', () => {
       const channels = service.getAlertChannels();
       expect(channels.length).toBeGreaterThan(0);
-      
+
       // Should have default webhook and console channels
-      const channelNames = channels.map(c => c.id);
+      const channelNames = channels.map((c) => c.id);
       expect(channelNames).toContain('default-webhook');
       expect(channelNames).toContain('console-log');
     });
@@ -316,9 +342,9 @@ describe('AutomatedAlertingService', () => {
     it('should have default rules configured', () => {
       const rules = service.getAlertRules();
       expect(rules.length).toBeGreaterThan(0);
-      
+
       // Should have default rules for performance, errors, and resources
-      const ruleIds = rules.map(r => r.id);
+      const ruleIds = rules.map((r) => r.id);
       expect(ruleIds).toContain('critical-performance');
       expect(ruleIds).toContain('high-error-rate');
       expect(ruleIds).toContain('resource-exhaustion');
@@ -328,7 +354,7 @@ describe('AutomatedAlertingService', () => {
   describe('Rate Limiting', () => {
     it('should handle alert processing without rate limiting errors', async () => {
       await service.onModuleInit();
-      
+
       // The service should handle multiple alerts without throwing errors
       expect(() => {
         // Simulate processing multiple alerts
@@ -342,7 +368,7 @@ describe('AutomatedAlertingService', () => {
   describe('Error Handling', () => {
     it('should handle ML analytics service errors gracefully', async () => {
       mlAnalyticsService.getMLAlerts.mockReturnValue(
-        new (require('rxjs').throwError)(() => new Error('ML service error'))
+        new (require('rxjs').throwError)(() => new Error('ML service error')),
       );
 
       // Should not throw when ML service fails

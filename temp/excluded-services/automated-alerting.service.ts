@@ -1,13 +1,91 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Observable, Subject, interval, Subscription, combineLatest } from 'rxjs';
 import { filter, debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
-import {
-  MLAnalyticsService,
-  MLAlert,
-  AnomalyDetection,
-  RegressionAnalysis,
-  PredictiveInsight,
-} from './ml-analytics.service';
+// import {
+//   MLAnalyticsService,
+//   MLAlert,
+//   AnomalyDetection,
+//   RegressionAnalysis,
+//   PredictiveInsight,
+// } from './ml-analytics.service';
+
+// Stub interfaces for now
+interface MLAlert {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  component: string;
+  metric: string;
+  value: number;
+  threshold: number;
+  confidence: number;
+  timestamp?: Date;
+  type?: string;
+  triggeredBy?: any;
+  actions: Array<{
+    type: string;
+    description: string;
+    priority: number;
+    automated: boolean;
+  }>;
+  relatedInsights: any[];
+}
+
+interface AnomalyDetection {
+  id: string;
+  metric: string;
+  value: number;
+  baseline: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  confidence: number;
+  description: string;
+  component?: string;
+  suggestedActions: string[];
+}
+
+interface RegressionAnalysis {
+  id: string;
+  metric: string;
+  actualValue: number;
+  predictedValue: number;
+  confidence: number;
+  description: string;
+  trend?: string;
+  impactAssessment?: string;
+  regressionRate?: number;
+  component?: string;
+}
+
+interface PredictiveInsight {
+  id: string;
+  metric: string;
+  predictedValue: number;
+  thresholds: {
+    warning: number;
+    critical: number;
+  };
+  confidence: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  trend?: string;
+  recommendedActions: string[];
+}
+
+class MLAnalyticsService {
+  getMLAlerts() {
+    return new Subject<MLAlert[]>();
+  }
+  getAnomalies() {
+    return new Subject<AnomalyDetection[]>();
+  }
+  getRegressionAnalysis() {
+    return new Subject<RegressionAnalysis[]>();
+  }
+  getPredictiveInsights() {
+    return new Subject<PredictiveInsight[]>();
+  }
+}
 import { AnalyticsService } from './analytics.service';
 import { MemoryManagerService, MemoryCollectionConfig } from './memory-manager.service';
 

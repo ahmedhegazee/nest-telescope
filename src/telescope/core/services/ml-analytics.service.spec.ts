@@ -14,7 +14,7 @@ describe('MLAnalyticsService', () => {
     timestamp: new Date(),
     timeRange: {
       start: new Date(Date.now() - 3600000), // 1 hour ago
-      end: new Date()
+      end: new Date(),
     },
     overview: {
       totalRequests: 1000,
@@ -26,38 +26,57 @@ describe('MLAnalyticsService', () => {
       errorRate: 0.05,
       throughput: 100,
       activeUsers: 50,
-      peakConcurrency: 75
+      peakConcurrency: 75,
     },
     performance: {
       responseTimeDistribution: {
-        p50: 200,
-        p75: 300,
-        p90: 400,
-        p95: 500,
-        p99: 800,
-        samples: 1000
+        buckets: [
+          { range: '0-100ms', count: 200, percentage: 20 },
+          { range: '100-500ms', count: 500, percentage: 50 },
+          { range: '500-1000ms', count: 200, percentage: 20 },
+          { range: '1000ms+', count: 100, percentage: 10 },
+        ],
+        percentiles: {
+          p50: 200,
+          p75: 300,
+          p90: 400,
+          p95: 500,
+          p99: 800,
+        },
       },
       slowestEndpoints: [],
       resourceUsage: {
-        cpu: 0.6,
-        memory: 0.7,
-        disk: 0.4,
-        network: 0.3
+        cpu: [{ timestamp: new Date(), value: 0.6 }],
+        memory: [{ timestamp: new Date(), value: 0.7 }],
+        connections: [{ timestamp: new Date(), value: 0.4 }],
+        diskIO: [{ timestamp: new Date(), value: 0.3 }],
       },
-      bottleneckAnalysis: []
+      bottleneckAnalysis: [],
     },
     errors: {
       errorDistribution: {
-        http4xx: 30,
-        http5xx: 20,
-        database: 10,
-        external: 5,
-        timeout: 3,
-        unknown: 2
+        byType: [
+          { type: 'http4xx', count: 30, percentage: 30 },
+          { type: 'http5xx', count: 20, percentage: 20 },
+          { type: 'database', count: 10, percentage: 10 },
+          { type: 'external', count: 5, percentage: 5 },
+          { type: 'timeout', count: 3, percentage: 3 },
+          { type: 'unknown', count: 2, percentage: 2 },
+        ],
+        bySeverity: [
+          { severity: 'low', count: 20, percentage: 20 },
+          { severity: 'medium', count: 30, percentage: 30 },
+          { severity: 'high', count: 20, percentage: 20 },
+        ],
+        byComponent: [
+          { component: 'api', count: 40, percentage: 40 },
+          { component: 'database', count: 30, percentage: 30 },
+          { component: 'external', count: 30, percentage: 30 },
+        ],
       },
       topErrors: [],
       errorTrends: [],
-      impactAnalysis: []
+      impactAnalysis: [],
     },
     database: {
       queryDistribution: {
@@ -65,7 +84,7 @@ describe('MLAnalyticsService', () => {
         insert: 100,
         update: 80,
         delete: 20,
-        other: 0
+        other: 0,
       },
       slowQueries: [],
       connectionHealth: {
@@ -74,14 +93,14 @@ describe('MLAnalyticsService', () => {
         totalConnections: 30,
         maxConnections: 100,
         connectionUtilization: 0.3,
-        averageResponseTime: 50
+        averageResponseTime: 50,
       },
       indexEfficiency: {
         totalQueries: 800,
         indexedQueries: 720,
         fullTableScans: 80,
-        indexUtilization: 0.9
-      }
+        indexUtilization: 0.9,
+      },
     },
     users: {
       activeUsers: [],
@@ -90,28 +109,28 @@ describe('MLAnalyticsService', () => {
         totalSessions: 100,
         bounceRate: 0.2,
         newUsers: 20,
-        returningUsers: 80
+        returningUsers: 80,
       },
       geographicDistribution: [],
-      deviceAnalysis: []
+      deviceAnalysis: [],
     },
     trends: {
       trafficTrends: [],
       performanceTrends: [],
       errorTrends: [],
-      predictions: []
+      predictions: [],
     },
     alerts: {
       activeAlerts: [],
       alertTrends: [],
-      anomalies: []
-    }
+      anomalies: [],
+    },
   };
 
   beforeEach(async () => {
     const mockAnalyticsService = {
       getAnalyticsStream: jest.fn().mockReturnValue(of(mockAnalyticsData)),
-      getAnalytics: jest.fn().mockReturnValue(mockAnalyticsData)
+      getAnalytics: jest.fn().mockReturnValue(mockAnalyticsData),
     };
 
     const mockPerformanceCorrelationService = {
@@ -119,8 +138,8 @@ describe('MLAnalyticsService', () => {
         averageResponseTime: 250,
         p95ResponseTime: 500,
         errorRate: 0.05,
-        totalRequests: 1000
-      })
+        totalRequests: 1000,
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -128,11 +147,11 @@ describe('MLAnalyticsService', () => {
         MLAnalyticsService,
         {
           provide: AnalyticsService,
-          useValue: mockAnalyticsService
+          useValue: mockAnalyticsService,
         },
         {
           provide: PerformanceCorrelationService,
-          useValue: mockPerformanceCorrelationService
+          useValue: mockPerformanceCorrelationService,
         },
         {
           provide: Logger,
@@ -140,15 +159,19 @@ describe('MLAnalyticsService', () => {
             log: jest.fn(),
             warn: jest.fn(),
             error: jest.fn(),
-            debug: jest.fn()
-          }
-        }
-      ]
+            debug: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<MLAnalyticsService>(MLAnalyticsService);
-    analyticsService = module.get<AnalyticsService>(AnalyticsService) as jest.Mocked<AnalyticsService>;
-    performanceCorrelationService = module.get<PerformanceCorrelationService>(PerformanceCorrelationService) as jest.Mocked<PerformanceCorrelationService>;
+    analyticsService = module.get<AnalyticsService>(
+      AnalyticsService,
+    ) as jest.Mocked<AnalyticsService>;
+    performanceCorrelationService = module.get<PerformanceCorrelationService>(
+      PerformanceCorrelationService,
+    ) as jest.Mocked<PerformanceCorrelationService>;
   });
 
   it('should be defined', () => {
@@ -165,8 +188,8 @@ describe('MLAnalyticsService', () => {
   describe('getAnomalies', () => {
     it('should return observable of anomalies', (done) => {
       const anomalies$ = service.getAnomalies();
-      
-      anomalies$.subscribe(anomalies => {
+
+      anomalies$.subscribe((anomalies) => {
         expect(Array.isArray(anomalies)).toBe(true);
         done();
       });
@@ -176,8 +199,8 @@ describe('MLAnalyticsService', () => {
   describe('getRegressionAnalysis', () => {
     it('should return observable of regression analysis', (done) => {
       const regressions$ = service.getRegressionAnalysis();
-      
-      regressions$.subscribe(regressions => {
+
+      regressions$.subscribe((regressions) => {
         expect(Array.isArray(regressions)).toBe(true);
         done();
       });
@@ -187,8 +210,8 @@ describe('MLAnalyticsService', () => {
   describe('getOptimizationSuggestions', () => {
     it('should return observable of optimization suggestions', (done) => {
       const optimizations$ = service.getOptimizationSuggestions();
-      
-      optimizations$.subscribe(suggestions => {
+
+      optimizations$.subscribe((suggestions) => {
         expect(Array.isArray(suggestions)).toBe(true);
         done();
       });
@@ -198,8 +221,8 @@ describe('MLAnalyticsService', () => {
   describe('getPredictiveInsights', () => {
     it('should return observable of predictive insights', (done) => {
       const insights$ = service.getPredictiveInsights();
-      
-      insights$.subscribe(insights => {
+
+      insights$.subscribe((insights) => {
         expect(Array.isArray(insights)).toBe(true);
         done();
       });
@@ -209,8 +232,8 @@ describe('MLAnalyticsService', () => {
   describe('getMLAlerts', () => {
     it('should return observable of ML alerts', (done) => {
       const alerts$ = service.getMLAlerts();
-      
-      alerts$.subscribe(alerts => {
+
+      alerts$.subscribe((alerts) => {
         expect(Array.isArray(alerts)).toBe(true);
         done();
       });
@@ -265,12 +288,12 @@ describe('MLAnalyticsService', () => {
         component: 'test',
         triggeredBy: { value: 100, threshold: 90, confidence: 1 },
         actions: [],
-        relatedInsights: []
+        relatedInsights: [],
       };
 
       // Manually add alert to service state for testing
       service['alertSubject'].next([mockAlert]);
-      
+
       const result = service.acknowledgeAlert('test-alert-1');
       expect(result).toBe(true);
     });
@@ -296,12 +319,12 @@ describe('MLAnalyticsService', () => {
         deviation: 250,
         confidence: 0.8,
         description: 'Response time anomaly',
-        suggestedActions: ['Investigate']
+        suggestedActions: ['Investigate'],
       };
 
       // Manually add anomaly to service state for testing
       service['anomalySubject'].next([mockAnomaly]);
-      
+
       const result = service.dismissAnomaly('test-anomaly-1');
       expect(result).toBe(true);
     });
@@ -315,7 +338,7 @@ describe('MLAnalyticsService', () => {
   describe('getMLMetrics', () => {
     it('should return ML metrics object', () => {
       const metrics = service.getMLMetrics();
-      
+
       expect(metrics).toHaveProperty('anomaliesDetected');
       expect(metrics).toHaveProperty('regressionsAnalyzed');
       expect(metrics).toHaveProperty('optimizationSuggestions');
@@ -343,22 +366,22 @@ describe('MLAnalyticsService', () => {
   describe('Anomaly Detection', () => {
     it('should process analytics data for anomaly detection', async () => {
       await service.onModuleInit();
-      
+
       // Simulate multiple data points to trigger anomaly detection
       const dataWithAnomaly = {
         ...mockAnalyticsData,
         overview: {
           ...mockAnalyticsData.overview,
-          averageResponseTime: 2000 // Significantly higher than baseline
-        }
+          averageResponseTime: 2000, // Significantly higher than baseline
+        },
       };
 
       // Emit the anomalous data
       analyticsService.getAnalyticsStream.mockReturnValue(of(dataWithAnomaly));
-      
+
       // Wait a bit for processing
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Check if anomalies are being tracked
       const metrics = service.getMLMetrics();
       expect(typeof metrics.anomaliesDetected).toBe('number');
@@ -376,7 +399,7 @@ describe('MLAnalyticsService', () => {
   describe('Error Handling', () => {
     it('should handle errors gracefully when analytics service fails', async () => {
       analyticsService.getAnalyticsStream.mockReturnValue(
-        new (require('rxjs').throwError)(() => new Error('Analytics service error'))
+        new (require('rxjs').throwError)(() => new Error('Analytics service error')),
       );
 
       // Should not throw when initialized with a failing analytics service

@@ -5,7 +5,7 @@ import { ExceptionWatcherService } from './exception-watcher.service';
 import { ExceptionWatcherFilter } from './exception-watcher.filter';
 import { TelescopeService } from '../../core/services/telescope.service';
 import { Controller, Get, HttpException, HttpStatus, Module } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 
 @Controller('test')
 class TestController {
@@ -93,9 +93,7 @@ describe('ExceptionWatcher Integration', () => {
 
   describe('HTTP Exception Handling', () => {
     it('should track HTTP exceptions with full context', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/test/http-error')
-        .expect(400);
+      const response = await request(app.getHttpServer()).get('/test/http-error').expect(400);
 
       expect(response.body).toEqual({
         statusCode: 400,
@@ -125,14 +123,12 @@ describe('ExceptionWatcher Integration', () => {
               statusCode: 400,
             }),
           }),
-        })
+        }),
       );
     });
 
     it('should track server errors as 500', async () => {
-      await request(app.getHttpServer())
-        .get('/test/server-error')
-        .expect(500);
+      await request(app.getHttpServer()).get('/test/server-error').expect(500);
 
       expect(telescopeService.record).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -144,7 +140,7 @@ describe('ExceptionWatcher Integration', () => {
               statusCode: 500,
             }),
           }),
-        })
+        }),
       );
     });
 
@@ -169,16 +165,14 @@ describe('ExceptionWatcher Integration', () => {
               }),
             }),
           }),
-        })
+        }),
       );
     });
   });
 
   describe('Error Classification', () => {
     it('should classify validation errors correctly', async () => {
-      await request(app.getHttpServer())
-        .get('/test/validation-error')
-        .expect(500);
+      await request(app.getHttpServer()).get('/test/validation-error').expect(500);
 
       expect(telescopeService.record).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -188,14 +182,12 @@ describe('ExceptionWatcher Integration', () => {
               severity: 'high',
             }),
           }),
-        })
+        }),
       );
     });
 
     it('should classify database errors correctly', async () => {
-      await request(app.getHttpServer())
-        .get('/test/database-error')
-        .expect(500);
+      await request(app.getHttpServer()).get('/test/database-error').expect(500);
 
       expect(telescopeService.record).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -205,7 +197,7 @@ describe('ExceptionWatcher Integration', () => {
               severity: 'high',
             }),
           }),
-        })
+        }),
       );
     });
   });
@@ -218,7 +210,7 @@ describe('ExceptionWatcher Integration', () => {
       await request(app.getHttpServer()).get('/test/database-error').expect(500);
 
       // Wait for grouping to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const groups = exceptionWatcherService.getExceptionGroups();
       expect(groups).toHaveLength(1);
@@ -273,8 +265,8 @@ describe('ExceptionWatcher Integration', () => {
       };
 
       const alertModule = ExceptionWatcherModule.forRoot(alertConfig);
-      
-      exceptionWatcherService.getAlertsStream().subscribe(alert => {
+
+      exceptionWatcherService.getAlertsStream().subscribe((alert) => {
         expect(alert.type).toBe('error_rate');
         expect(alert.severity).toBe('high');
         done();
@@ -289,7 +281,7 @@ describe('ExceptionWatcher Integration', () => {
     });
 
     it('should generate alerts for new error types', (done) => {
-      exceptionWatcherService.getAlertsStream().subscribe(alert => {
+      exceptionWatcherService.getAlertsStream().subscribe((alert) => {
         if (alert.type === 'new_error') {
           expect(alert.severity).toBe('medium');
           expect(alert.message).toContain('New error type detected');
@@ -305,10 +297,10 @@ describe('ExceptionWatcher Integration', () => {
   describe('Performance Impact', () => {
     it('should have minimal performance impact', async () => {
       const startTime = Date.now();
-      
+
       // Make multiple requests
       const requests = Array.from({ length: 100 }, () =>
-        request(app.getHttpServer()).get('/test/success').expect(200)
+        request(app.getHttpServer()).get('/test/success').expect(200),
       );
 
       await Promise.all(requests);
@@ -328,14 +320,10 @@ describe('ExceptionWatcher Integration', () => {
       });
 
       // Should not crash the application
-      await request(app.getHttpServer())
-        .get('/test/server-error')
-        .expect(500);
+      await request(app.getHttpServer()).get('/test/server-error').expect(500);
 
       // Should still return proper error response
-      const response = await request(app.getHttpServer())
-        .get('/test/http-error')
-        .expect(400);
+      const response = await request(app.getHttpServer()).get('/test/http-error').expect(400);
 
       expect(response.body.statusCode).toBe(400);
     });
@@ -363,9 +351,7 @@ describe('ExceptionWatcher Integration', () => {
 
       telescopeService.record.mockClear();
 
-      await request(testApp.getHttpServer())
-        .get('/test/server-error')
-        .expect(500);
+      await request(testApp.getHttpServer()).get('/test/server-error').expect(500);
 
       expect(telescopeService.record).not.toHaveBeenCalled();
 
@@ -394,9 +380,7 @@ describe('ExceptionWatcher Integration', () => {
 
       telescopeService.record.mockClear();
 
-      await request(testApp.getHttpServer())
-        .get('/test/server-error')
-        .expect(500);
+      await request(testApp.getHttpServer()).get('/test/server-error').expect(500);
 
       expect(telescopeService.record).not.toHaveBeenCalled();
 
@@ -428,9 +412,7 @@ describe('ExceptionWatcher Integration', () => {
       const testApp = asyncApp.createNestApplication();
       await testApp.init();
 
-      await request(testApp.getHttpServer())
-        .get('/test/server-error')
-        .expect(500);
+      await request(testApp.getHttpServer()).get('/test/server-error').expect(500);
 
       expect(telescopeService.record).toHaveBeenCalled();
 

@@ -10,7 +10,7 @@ import { CacheWatcherService } from '../src/telescope/watchers/cache/cache-watch
 import { AnalyticsService } from '../src/telescope/core/services/analytics.service';
 import { PerformanceCorrelationService } from '../src/telescope/core/services/performance-correlation.service';
 import { ExportReportingService } from '../src/telescope/core/services/export-reporting.service';
-import { Week7AnalyticsController } from '../src/telescope/dashboard/controllers/week7-analytics.controller';
+import { Week7AnalyticsController } from '../src/telescope/dashboard/controllers/analytics.controller';
 
 describe('Week 7 Integration Tests (e2e)', () => {
   let app: INestApplication;
@@ -72,12 +72,14 @@ describe('Week 7 Integration Tests (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Get service instances
     jobWatcherService = moduleFixture.get<JobWatcherService>(JobWatcherService);
     cacheWatcherService = moduleFixture.get<CacheWatcherService>(CacheWatcherService);
     analyticsService = moduleFixture.get<AnalyticsService>(AnalyticsService);
-    performanceCorrelationService = moduleFixture.get<PerformanceCorrelationService>(PerformanceCorrelationService);
+    performanceCorrelationService = moduleFixture.get<PerformanceCorrelationService>(
+      PerformanceCorrelationService,
+    );
     exportReportingService = moduleFixture.get<ExportReportingService>(ExportReportingService);
 
     await app.init();
@@ -212,7 +214,7 @@ describe('Week 7 Integration Tests (e2e)', () => {
 
       // Simulate request data
       performanceCorrelationService.correlateWatcherData('request', testData);
-      
+
       // Simulate query data
       performanceCorrelationService.correlateWatcherData('query', {
         ...testData,
@@ -289,9 +291,11 @@ describe('Week 7 Integration Tests (e2e)', () => {
     it('should provide time-range analytics', async () => {
       const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const end = new Date();
-      
+
       const response = await request(app.getHttpServer())
-        .get(`/telescope/analytics/advanced?startDate=${start.toISOString()}&endDate=${end.toISOString()}`)
+        .get(
+          `/telescope/analytics/advanced?startDate=${start.toISOString()}&endDate=${end.toISOString()}`,
+        )
         .expect(200);
 
       expect(response.body).toHaveProperty('timeRange');
@@ -448,7 +452,7 @@ describe('Week 7 Integration Tests (e2e)', () => {
 
     it('should acknowledge alerts', async () => {
       const alertId = 'test-alert-123';
-      
+
       const response = await request(app.getHttpServer())
         .post(`/telescope/analytics/alerts/${alertId}/acknowledge`)
         .expect(200);
@@ -462,7 +466,7 @@ describe('Week 7 Integration Tests (e2e)', () => {
   describe('Real-time Streams', () => {
     it('should provide job metrics stream', (done) => {
       const stream = jobWatcherService.getMetricsStream();
-      
+
       const subscription = stream.subscribe({
         next: (metrics) => {
           expect(metrics).toHaveProperty('totalJobs');
@@ -490,7 +494,7 @@ describe('Week 7 Integration Tests (e2e)', () => {
 
     it('should provide cache metrics stream', (done) => {
       const stream = cacheWatcherService.getMetricsStream();
-      
+
       const subscription = stream.subscribe({
         next: (metrics) => {
           expect(metrics).toHaveProperty('totalOperations');
@@ -515,7 +519,7 @@ describe('Week 7 Integration Tests (e2e)', () => {
 
     it('should provide analytics stream', (done) => {
       const stream = analyticsService.getAnalyticsStream();
-      
+
       const subscription = stream.subscribe({
         next: (analytics) => {
           expect(analytics).toHaveProperty('timestamp');
@@ -584,9 +588,9 @@ describe('Week 7 Integration Tests (e2e)', () => {
 
       const endTime = Date.now();
       const processingTime = endTime - startTime;
-      
+
       expect(processingTime).toBeLessThan(5000); // Should process 1000 jobs in under 5 seconds
-      
+
       const metrics = jobWatcherService.getMetrics();
       expect(metrics.totalJobs).toBeGreaterThanOrEqual(jobCount);
     });
@@ -609,9 +613,9 @@ describe('Week 7 Integration Tests (e2e)', () => {
 
       const endTime = Date.now();
       const processingTime = endTime - startTime;
-      
+
       expect(processingTime).toBeLessThan(5000); // Should process 1000 operations in under 5 seconds
-      
+
       const metrics = cacheWatcherService.getMetrics();
       expect(metrics.totalOperations).toBeGreaterThanOrEqual(opCount);
     });

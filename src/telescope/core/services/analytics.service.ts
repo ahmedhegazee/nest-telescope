@@ -10,7 +10,7 @@ export interface AnalyticsData {
     start: Date;
     end: Date;
   };
-  
+
   // Overview metrics
   overview: {
     totalRequests: number;
@@ -18,15 +18,15 @@ export interface AnalyticsData {
     totalQueries: number;
     totalCacheOps: number;
     totalJobs: number;
-    
+
     averageResponseTime: number;
     errorRate: number;
     throughput: number;
-    
+
     activeUsers: number;
     peakConcurrency: number;
   };
-  
+
   // Performance analytics
   performance: {
     responseTimeDistribution: PerformanceDistribution;
@@ -34,7 +34,7 @@ export interface AnalyticsData {
     resourceUsage: ResourceUsage;
     bottleneckAnalysis: BottleneckSummary[];
   };
-  
+
   // Error analytics
   errors: {
     errorDistribution: ErrorDistribution;
@@ -42,7 +42,7 @@ export interface AnalyticsData {
     errorTrends: TimeSeries[];
     impactAnalysis: ErrorImpact[];
   };
-  
+
   // Database analytics
   database: {
     queryDistribution: QueryDistribution;
@@ -50,7 +50,7 @@ export interface AnalyticsData {
     connectionHealth: ConnectionHealth;
     indexUsage: IndexUsage[];
   };
-  
+
   // Cache analytics
   cache: {
     hitRateDistribution: CacheDistribution;
@@ -58,7 +58,7 @@ export interface AnalyticsData {
     performanceMetrics: CachePerformance;
     evictionAnalysis: EvictionAnalysis[];
   };
-  
+
   // Job analytics
   jobs: {
     queueHealth: QueueHealth[];
@@ -66,7 +66,7 @@ export interface AnalyticsData {
     failureAnalysis: JobFailureAnalysis[];
     throughputMetrics: JobThroughput[];
   };
-  
+
   // User analytics
   users: {
     activeUsers: UserMetrics[];
@@ -74,7 +74,7 @@ export interface AnalyticsData {
     geographicDistribution: GeographicData[];
     deviceAnalysis: DeviceAnalysis[];
   };
-  
+
   // Trends and predictions
   trends: {
     trafficTrends: TimeSeries[];
@@ -82,7 +82,7 @@ export interface AnalyticsData {
     errorTrends: TimeSeries[];
     predictions: PredictionData[];
   };
-  
+
   // Alerts and anomalies
   alerts: {
     activeAlerts: AlertSummary[];
@@ -330,7 +330,7 @@ export class AnalyticsService implements OnModuleInit {
 
   constructor(
     private readonly telescopeService: TelescopeService,
-    private readonly performanceCorrelationService: PerformanceCorrelationService
+    private readonly performanceCorrelationService: PerformanceCorrelationService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -512,11 +512,11 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private updateOverview(entries: any[], performanceMetrics: any): void {
-    const requests = entries.filter(e => e.type === 'request');
-    const errors = entries.filter(e => e.type === 'exception');
-    const queries = entries.filter(e => e.type === 'query');
-    const cacheOps = entries.filter(e => e.type === 'cache');
-    const jobs = entries.filter(e => e.type === 'job');
+    const requests = entries.filter((e) => e.type === 'request');
+    const errors = entries.filter((e) => e.type === 'exception');
+    const queries = entries.filter((e) => e.type === 'query');
+    const cacheOps = entries.filter((e) => e.type === 'cache');
+    const jobs = entries.filter((e) => e.type === 'job');
 
     this.currentAnalytics.overview = {
       totalRequests: requests.length,
@@ -533,144 +533,119 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private updatePerformanceAnalytics(entries: any[], correlations: any[]): void {
-    const requests = entries.filter(e => e.type === 'request');
-    const responseTimes = requests
-      .map(r => r.content?.duration || 0)
-      .filter(d => d > 0);
+    const requests = entries.filter((e) => e.type === 'request');
+    const responseTimes = requests.map((r) => r.content?.duration || 0).filter((d) => d > 0);
 
     // Update response time distribution
-    this.currentAnalytics.performance.responseTimeDistribution = 
+    this.currentAnalytics.performance.responseTimeDistribution =
       this.calculateResponseTimeDistribution(responseTimes);
 
     // Update slowest endpoints
-    this.currentAnalytics.performance.slowestEndpoints = 
-      this.calculateSlowestEndpoints(requests);
+    this.currentAnalytics.performance.slowestEndpoints = this.calculateSlowestEndpoints(requests);
 
     // Update resource usage (would need system metrics)
-    this.currentAnalytics.performance.resourceUsage = 
-      this.calculateResourceUsage(entries);
+    this.currentAnalytics.performance.resourceUsage = this.calculateResourceUsage(entries);
 
     // Update bottleneck analysis
-    this.currentAnalytics.performance.bottleneckAnalysis = 
+    this.currentAnalytics.performance.bottleneckAnalysis =
       this.calculateBottleneckAnalysis(correlations);
   }
 
   private updateErrorAnalytics(entries: any[]): void {
-    const errors = entries.filter(e => e.type === 'exception');
+    const errors = entries.filter((e) => e.type === 'exception');
 
     // Update error distribution
-    this.currentAnalytics.errors.errorDistribution = 
-      this.calculateErrorDistribution(errors);
+    this.currentAnalytics.errors.errorDistribution = this.calculateErrorDistribution(errors);
 
     // Update top errors
-    this.currentAnalytics.errors.topErrors = 
-      this.calculateTopErrors(errors);
+    this.currentAnalytics.errors.topErrors = this.calculateTopErrors(errors);
 
     // Update error trends - converting to time series format
-    this.currentAnalytics.errors.errorTrends = 
-      this.convertErrorsToTimeSeries(errors);
+    this.currentAnalytics.errors.errorTrends = this.convertErrorsToTimeSeries(errors);
 
     // Update impact analysis
-    this.currentAnalytics.errors.impactAnalysis = 
-      this.calculateErrorImpact(errors);
+    this.currentAnalytics.errors.impactAnalysis = this.calculateErrorImpact(errors);
   }
 
   private updateDatabaseAnalytics(entries: any[]): void {
-    const queries = entries.filter(e => e.type === 'query');
+    const queries = entries.filter((e) => e.type === 'query');
 
     // Update query distribution
-    this.currentAnalytics.database.queryDistribution = 
-      this.calculateQueryDistribution(queries);
+    this.currentAnalytics.database.queryDistribution = this.calculateQueryDistribution(queries);
 
     // Update slow queries
-    this.currentAnalytics.database.slowQueries = 
-      this.calculateSlowQueries(queries);
+    this.currentAnalytics.database.slowQueries = this.calculateSlowQueries(queries);
 
     // Update connection health (would need connection pool data)
-    this.currentAnalytics.database.connectionHealth = 
-      this.calculateConnectionHealth(queries);
+    this.currentAnalytics.database.connectionHealth = this.calculateConnectionHealth(queries);
 
     // Update index usage
-    this.currentAnalytics.database.indexUsage = 
-      this.calculateIndexUsage(queries);
+    this.currentAnalytics.database.indexUsage = this.calculateIndexUsage(queries);
   }
 
   private updateCacheAnalytics(entries: any[]): void {
-    const cacheOps = entries.filter(e => e.type === 'cache');
+    const cacheOps = entries.filter((e) => e.type === 'cache');
 
     // Update hit rate distribution
-    this.currentAnalytics.cache.hitRateDistribution = 
-      this.calculateCacheDistribution(cacheOps);
+    this.currentAnalytics.cache.hitRateDistribution = this.calculateCacheDistribution(cacheOps);
 
     // Update top keys
-    this.currentAnalytics.cache.topKeys = 
-      this.calculateTopCacheKeys(cacheOps);
+    this.currentAnalytics.cache.topKeys = this.calculateTopCacheKeys(cacheOps);
 
     // Update performance metrics
-    this.currentAnalytics.cache.performanceMetrics = 
-      this.calculateCachePerformance(cacheOps);
+    this.currentAnalytics.cache.performanceMetrics = this.calculateCachePerformance(cacheOps);
 
     // Update eviction analysis
-    this.currentAnalytics.cache.evictionAnalysis = 
-      this.calculateEvictionAnalysis(cacheOps);
+    this.currentAnalytics.cache.evictionAnalysis = this.calculateEvictionAnalysis(cacheOps);
   }
 
   private updateJobAnalytics(entries: any[]): void {
-    const jobs = entries.filter(e => e.type === 'job');
+    const jobs = entries.filter((e) => e.type === 'job');
 
     // Update queue health
-    this.currentAnalytics.jobs.queueHealth = 
-      this.calculateQueueHealth(jobs);
+    this.currentAnalytics.jobs.queueHealth = this.calculateQueueHealth(jobs);
 
     // Update processing times
-    this.currentAnalytics.jobs.processingTimes = 
-      this.calculateJobDistribution(jobs);
+    this.currentAnalytics.jobs.processingTimes = this.calculateJobDistribution(jobs);
 
     // Update failure analysis
-    this.currentAnalytics.jobs.failureAnalysis = 
-      this.calculateJobFailureAnalysis(jobs);
+    this.currentAnalytics.jobs.failureAnalysis = this.calculateJobFailureAnalysis(jobs);
 
     // Update throughput metrics
-    this.currentAnalytics.jobs.throughputMetrics = 
-      this.calculateJobThroughput(jobs);
+    this.currentAnalytics.jobs.throughputMetrics = this.calculateJobThroughput(jobs);
   }
 
   private updateUserAnalytics(entries: any[]): void {
-    const requests = entries.filter(e => e.type === 'request');
+    const requests = entries.filter((e) => e.type === 'request');
 
     // Update active users
-    this.currentAnalytics.users.activeUsers = 
-      this.calculateActiveUserMetrics(requests);
+    this.currentAnalytics.users.activeUsers = this.calculateActiveUserMetrics(requests);
 
     // Update session analysis
-    this.currentAnalytics.users.sessionAnalysis = 
-      this.calculateSessionAnalysis(requests);
+    this.currentAnalytics.users.sessionAnalysis = this.calculateSessionAnalysis(requests);
 
     // Update geographic distribution
-    this.currentAnalytics.users.geographicDistribution = 
+    this.currentAnalytics.users.geographicDistribution =
       this.calculateGeographicDistribution(requests);
 
     // Update device analysis
-    this.currentAnalytics.users.deviceAnalysis = 
-      this.calculateDeviceAnalysis(requests);
+    this.currentAnalytics.users.deviceAnalysis = this.calculateDeviceAnalysis(requests);
   }
 
   private updateTrends(entries: any[]): void {
     // Update traffic trends
-    this.currentAnalytics.trends.trafficTrends = 
-      this.calculateTrafficTrends(entries);
+    this.currentAnalytics.trends.trafficTrends = this.calculateTrafficTrends(entries);
 
     // Update performance trends
-    this.currentAnalytics.trends.performanceTrends = 
-      this.calculatePerformanceTrends(entries);
+    this.currentAnalytics.trends.performanceTrends = this.calculatePerformanceTrends(entries);
 
     // Update error trends - converting to time series format
-    this.currentAnalytics.trends.errorTrends = 
-      this.convertErrorsToTimeSeries(entries.filter(e => e.type === 'exception'));
+    this.currentAnalytics.trends.errorTrends = this.convertErrorsToTimeSeries(
+      entries.filter((e) => e.type === 'exception'),
+    );
 
     // Update predictions
-    this.currentAnalytics.trends.predictions = 
-      this.calculatePredictions(entries);
+    this.currentAnalytics.trends.predictions = this.calculatePredictions(entries);
   }
 
   private updateAlertsAndAnomalies(): void {
@@ -685,9 +660,7 @@ export class AnalyticsService implements OnModuleInit {
   // Helper methods for calculations would go here
   private calculateActiveUsers(requests: any[]): number {
     const uniqueUsers = new Set(
-      requests
-        .map(r => r.content?.userId || r.content?.ip)
-        .filter(Boolean)
+      requests.map((r) => r.content?.userId || r.content?.ip).filter(Boolean),
     );
     return uniqueUsers.size;
   }
@@ -714,7 +687,7 @@ export class AnalyticsService implements OnModuleInit {
       { range: '>5s', count: 0, percentage: 0 },
     ];
 
-    sorted.forEach(time => {
+    sorted.forEach((time) => {
       if (time !== undefined) {
         if (time < 100) buckets[0]!.count++;
         else if (time < 500) buckets[1]!.count++;
@@ -724,7 +697,7 @@ export class AnalyticsService implements OnModuleInit {
       }
     });
 
-    buckets.forEach(bucket => {
+    buckets.forEach((bucket) => {
       bucket.percentage = (bucket.count / sorted.length) * 100;
     });
 
@@ -741,14 +714,17 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculateSlowestEndpoints(requests: any[]): EndpointMetrics[] {
-    const endpointMap = new Map<string, {
-      count: number;
-      totalTime: number;
-      times: number[];
-      errors: number;
-    }>();
+    const endpointMap = new Map<
+      string,
+      {
+        count: number;
+        totalTime: number;
+        times: number[];
+        errors: number;
+      }
+    >();
 
-    requests.forEach(request => {
+    requests.forEach((request) => {
       const endpoint = `${request.content?.method || 'GET'} ${request.content?.path || '/'}`;
       const duration = request.content?.duration || 0;
       const hasError = request.content?.statusCode >= 400;
@@ -802,13 +778,16 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculateBottleneckAnalysis(correlations: any[]): BottleneckSummary[] {
-    const bottleneckMap = new Map<string, {
-      count: number;
-      totalImpact: number;
-      severities: string[];
-    }>();
+    const bottleneckMap = new Map<
+      string,
+      {
+        count: number;
+        totalImpact: number;
+        severities: string[];
+      }
+    >();
 
-    correlations.forEach(correlation => {
+    correlations.forEach((correlation) => {
       correlation.bottlenecks?.forEach((bottleneck: any) => {
         const key = bottleneck.component;
         if (!bottleneckMap.has(key)) {
@@ -844,7 +823,7 @@ export class AnalyticsService implements OnModuleInit {
 
   private getMostCommon(items: string[]): string {
     const counts = new Map<string, number>();
-    items.forEach(item => {
+    items.forEach((item) => {
       counts.set(item, (counts.get(item) || 0) + 1);
     });
 
@@ -866,7 +845,7 @@ export class AnalyticsService implements OnModuleInit {
     const severityMap = new Map<string, number>();
     const componentMap = new Map<string, number>();
 
-    errors.forEach(error => {
+    errors.forEach((error) => {
       const errorType = error.content?.error?.name || 'Unknown';
       const severity = error.content?.severity || 'medium';
       const component = error.content?.component || 'application';
@@ -898,19 +877,22 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculateTopErrors(errors: any[]): ErrorSummary[] {
-    const errorMap = new Map<string, {
-      count: number;
-      firstSeen: Date;
-      lastSeen: Date;
-      affectedUsers: Set<string>;
-      message: string;
-    }>();
+    const errorMap = new Map<
+      string,
+      {
+        count: number;
+        firstSeen: Date;
+        lastSeen: Date;
+        affectedUsers: Set<string>;
+        message: string;
+      }
+    >();
 
-    errors.forEach(error => {
+    errors.forEach((error) => {
       const errorType = error.content?.error?.name || 'Unknown';
       const message = error.content?.error?.message || 'No message';
       const userId = error.content?.userId || error.content?.ip;
-      
+
       if (!errorMap.has(errorType)) {
         errorMap.set(errorType, {
           count: 0,
@@ -943,16 +925,19 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculateErrorImpact(errors: any[]): ErrorImpact[] {
-    const impactMap = new Map<string, {
-      count: number;
-      performanceImpact: number[];
-      userCount: number;
-    }>();
+    const impactMap = new Map<
+      string,
+      {
+        count: number;
+        performanceImpact: number[];
+        userCount: number;
+      }
+    >();
 
-    errors.forEach(error => {
+    errors.forEach((error) => {
       const errorType = error.content?.error?.name || 'Unknown';
       const responseTime = error.content?.responseTime || 0;
-      
+
       if (!impactMap.has(errorType)) {
         impactMap.set(errorType, {
           count: 0,
@@ -968,10 +953,12 @@ export class AnalyticsService implements OnModuleInit {
 
     return Array.from(impactMap.entries())
       .map(([errorType, data]) => {
-        const avgPerformanceImpact = data.performanceImpact.length > 0 
-          ? data.performanceImpact.reduce((sum, val) => sum + val, 0) / data.performanceImpact.length
-          : 0;
-        
+        const avgPerformanceImpact =
+          data.performanceImpact.length > 0
+            ? data.performanceImpact.reduce((sum, val) => sum + val, 0) /
+              data.performanceImpact.length
+            : 0;
+
         const userImpact = (data.userCount / this.currentAnalytics.overview.activeUsers) * 100;
         const businessImpact = this.calculateBusinessImpact(data.count, avgPerformanceImpact);
 
@@ -980,7 +967,11 @@ export class AnalyticsService implements OnModuleInit {
           performanceImpact: avgPerformanceImpact,
           userImpact,
           businessImpact,
-          recommendations: this.generateErrorRecommendations(errorType, avgPerformanceImpact, data.count),
+          recommendations: this.generateErrorRecommendations(
+            errorType,
+            avgPerformanceImpact,
+            data.count,
+          ),
         };
       })
       .sort((a, b) => b.businessImpact - a.businessImpact);
@@ -1023,21 +1014,21 @@ export class AnalyticsService implements OnModuleInit {
       };
     }
 
-    const hits = cacheOps.filter(op => op.content?.cache?.hit === true).length;
+    const hits = cacheOps.filter((op) => op.content?.cache?.hit === true).length;
     const total = cacheOps.length;
     const hitRate = (hits / total) * 100;
     const missRate = 100 - hitRate;
 
     // By operation
     const operationMap = new Map<string, { total: number; hits: number }>();
-    cacheOps.forEach(op => {
+    cacheOps.forEach((op) => {
       const operation = op.content?.cache?.operation || 'unknown';
       const isHit = op.content?.cache?.hit === true;
-      
+
       if (!operationMap.has(operation)) {
         operationMap.set(operation, { total: 0, hits: 0 });
       }
-      
+
       const data = operationMap.get(operation)!;
       data.total++;
       if (isHit) data.hits++;
@@ -1051,14 +1042,15 @@ export class AnalyticsService implements OnModuleInit {
 
     // By key pattern
     const patternMap = new Map<string, { total: number; hits: number }>();
-    cacheOps.forEach(op => {
-      const pattern = op.content?.cache?.keyPattern || this.extractKeyPattern(op.content?.cache?.key || '');
+    cacheOps.forEach((op) => {
+      const pattern =
+        op.content?.cache?.keyPattern || this.extractKeyPattern(op.content?.cache?.key || '');
       const isHit = op.content?.cache?.hit === true;
-      
+
       if (!patternMap.has(pattern)) {
         patternMap.set(pattern, { total: 0, hits: 0 });
       }
-      
+
       const data = patternMap.get(pattern)!;
       data.total++;
       if (isHit) data.hits++;
@@ -1117,19 +1109,22 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculateActiveUserMetrics(requests: any[]): UserMetrics[] {
-    const userMap = new Map<string, {
-      sessionCount: number;
-      requestCount: number;
-      errorCount: number;
-      responseTimes: number[];
-      lastActive: Date;
-    }>();
+    const userMap = new Map<
+      string,
+      {
+        sessionCount: number;
+        requestCount: number;
+        errorCount: number;
+        responseTimes: number[];
+        lastActive: Date;
+      }
+    >();
 
-    requests.forEach(request => {
+    requests.forEach((request) => {
       const userId = request.content?.userId || request.content?.ip || 'anonymous';
       const responseTime = request.content?.duration || 0;
       const hasError = request.content?.responseStatus >= 400;
-      
+
       if (!userMap.has(userId)) {
         userMap.set(userId, {
           sessionCount: 0,
@@ -1153,9 +1148,10 @@ export class AnalyticsService implements OnModuleInit {
         sessionCount: data.sessionCount,
         requestCount: data.requestCount,
         errorCount: data.errorCount,
-        averageResponseTime: data.responseTimes.length > 0 
-          ? data.responseTimes.reduce((sum, val) => sum + val, 0) / data.responseTimes.length 
-          : 0,
+        averageResponseTime:
+          data.responseTimes.length > 0
+            ? data.responseTimes.reduce((sum, val) => sum + val, 0) / data.responseTimes.length
+            : 0,
         lastActive: data.lastActive,
       }))
       .sort((a, b) => b.requestCount - a.requestCount)
@@ -1181,14 +1177,14 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculateTrafficTrends(entries: any[]): TimeSeries[] {
-    const requests = entries.filter(e => e.type === 'request');
+    const requests = entries.filter((e) => e.type === 'request');
     const hourlyBuckets = new Map<string, number>();
 
-    requests.forEach(request => {
+    requests.forEach((request) => {
       const hour = new Date(request.timestamp);
       hour.setMinutes(0, 0, 0);
       const hourKey = hour.toISOString();
-      
+
       hourlyBuckets.set(hourKey, (hourlyBuckets.get(hourKey) || 0) + 1);
     });
 
@@ -1202,18 +1198,18 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   private calculatePerformanceTrends(entries: any[]): TimeSeries[] {
-    const requests = entries.filter(e => e.type === 'request' && e.content?.duration);
+    const requests = entries.filter((e) => e.type === 'request' && e.content?.duration);
     const hourlyBuckets = new Map<string, number[]>();
 
-    requests.forEach(request => {
+    requests.forEach((request) => {
       const hour = new Date(request.timestamp);
       hour.setMinutes(0, 0, 0);
       const hourKey = hour.toISOString();
-      
+
       if (!hourlyBuckets.has(hourKey)) {
         hourlyBuckets.set(hourKey, []);
       }
-      
+
       hourlyBuckets.get(hourKey)!.push(request.content.duration);
     });
 
@@ -1228,14 +1224,14 @@ export class AnalyticsService implements OnModuleInit {
 
   private calculatePredictions(entries: any[]): PredictionData[] {
     const predictions: PredictionData[] = [];
-    
+
     // Traffic prediction
     const trafficTrend = this.calculateTrafficTrends(entries);
     if (trafficTrend.length >= 3) {
       const recent = trafficTrend.slice(-3);
       const avgChange = (recent[2]!.value - recent[0]!.value) / 2;
       const predicted = recent[2]!.value + avgChange;
-      
+
       predictions.push({
         metric: 'traffic',
         prediction: Math.max(0, predicted),
@@ -1244,14 +1240,14 @@ export class AnalyticsService implements OnModuleInit {
         factors: ['historical_trend', 'time_of_day'],
       });
     }
-    
+
     // Performance prediction
     const perfTrend = this.calculatePerformanceTrends(entries);
     if (perfTrend.length >= 3) {
       const recent = perfTrend.slice(-3);
       const avgChange = (recent[2]!.value - recent[0]!.value) / 2;
       const predicted = recent[2]!.value + avgChange;
-      
+
       predictions.push({
         metric: 'response_time',
         prediction: Math.max(0, predicted),
@@ -1260,7 +1256,7 @@ export class AnalyticsService implements OnModuleInit {
         factors: ['performance_trend', 'system_load'],
       });
     }
-    
+
     return predictions;
   }
 
@@ -1278,11 +1274,16 @@ export class AnalyticsService implements OnModuleInit {
     return Promise.resolve({ ...this.currentAnalytics });
   }
 
+  // Public method for testing - triggers analytics update
+  async refreshAnalytics(): Promise<void> {
+    await this.updateAnalytics();
+  }
+
   onDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
-  
+
   // Helper methods
   private calculateErrorImpactScore(count: number, affectedUsers: number): number {
     // Impact score based on frequency and user impact
@@ -1290,39 +1291,45 @@ export class AnalyticsService implements OnModuleInit {
     const userScore = Math.min(affectedUsers / 10, 1) * 50; // Max 50 points for user impact
     return frequencyScore + userScore;
   }
-  
+
   private calculateBusinessImpact(errorCount: number, avgResponseTime: number): number {
     // Business impact score based on error frequency and performance impact
     const errorImpact = Math.min(errorCount / 100, 1) * 60;
     const performanceImpact = Math.min(avgResponseTime / 5000, 1) * 40;
     return errorImpact + performanceImpact;
   }
-  
-  private generateErrorRecommendations(errorType: string, performanceImpact: number, count: number): string[] {
+
+  private generateErrorRecommendations(
+    errorType: string,
+    performanceImpact: number,
+    count: number,
+  ): string[] {
     const recommendations: string[] = [];
-    
+
     if (count > 10) {
       recommendations.push('Investigate error frequency and implement preventive measures');
     }
-    
+
     if (performanceImpact > 1000) {
       recommendations.push('Optimize error handling to reduce performance impact');
     }
-    
+
     if (errorType.toLowerCase().includes('database')) {
       recommendations.push('Review database queries and connection handling');
     }
-    
+
     if (errorType.toLowerCase().includes('timeout')) {
       recommendations.push('Increase timeout values or optimize slow operations');
     }
-    
-    return recommendations.length > 0 ? recommendations : ['Monitor error patterns and implement appropriate fixes'];
+
+    return recommendations.length > 0
+      ? recommendations
+      : ['Monitor error patterns and implement appropriate fixes'];
   }
-  
+
   private extractKeyPattern(key: string): string {
     if (!key) return 'unknown';
-    
+
     return key
       .replace(/\d+/g, 'N')
       .replace(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi, 'UUID')
@@ -1337,26 +1344,26 @@ export class AnalyticsService implements OnModuleInit {
     // Group errors by hour and count occurrences
     const now = new Date();
     const hourlyBuckets = new Map<string, number>();
-    
+
     // Initialize buckets for the last 24 hours
     for (let i = 23; i >= 0; i--) {
       const hourAgo = new Date(now.getTime() - i * 60 * 60 * 1000);
       const hourKey = hourAgo.toISOString().slice(0, 13); // YYYY-MM-DDTHH
       hourlyBuckets.set(hourKey, 0);
     }
-    
+
     // Count errors by hour
-    errors.forEach(error => {
+    errors.forEach((error) => {
       const timestamp = new Date(error.timestamp);
       const hourKey = timestamp.toISOString().slice(0, 13);
       const currentCount = hourlyBuckets.get(hourKey) || 0;
       hourlyBuckets.set(hourKey, currentCount + 1);
     });
-    
+
     // Convert to TimeSeries format
     return Array.from(hourlyBuckets.entries()).map(([hourKey, count]) => ({
       timestamp: new Date(hourKey + ':00:00.000Z'),
-      value: count
+      value: count,
     }));
   }
 }
